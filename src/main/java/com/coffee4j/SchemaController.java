@@ -1,9 +1,11 @@
 package com.coffee4j;
 
+import com.mongodb.DBRef;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,12 @@ public final class SchemaController {
     @Value("${spring.data.mongodb.database}")
     private String databaseName;
 
+    private final String collectionName;
+
+    public SchemaController() {
+        this.collectionName = "schemas";
+    } //SchemaController
+
     @PostMapping("create")
     public ResponseEntity<Document> create(@RequestBody Map<String, Object> parameters) {
         System.out.println(parameters);
@@ -33,11 +41,9 @@ public final class SchemaController {
 
         Object userIdObject = parameters.get(userIdKey);
 
-        if (!(userIdObject instanceof Number number)) {
+        if (!(userIdObject instanceof String userId)) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } //end if
-
-        long userId = number.longValue();
 
         String defaultKey = "default";
 
@@ -67,13 +73,19 @@ public final class SchemaController {
 
         MongoDatabase database = client.getDatabase(this.databaseName);
 
-        String collectionName = "schemas";
-
-        MongoCollection<Document> collection = database.getCollection(collectionName);
+        MongoCollection<Document> collection = database.getCollection(this.collectionName);
 
         Document schemaDocument = new Document();
 
-        schemaDocument.put(userIdKey, userId);
+        String userKey = "user";
+
+        String usersCollectionName = "users";
+
+        ObjectId userObjectId = new ObjectId(userId);
+
+        DBRef userRef = new DBRef(this.databaseName, usersCollectionName, userObjectId);
+
+        schemaDocument.put(userKey, userRef);
 
         schemaDocument.put(defaultKey, defaultFlag);
 
@@ -91,7 +103,7 @@ public final class SchemaController {
     } //create
 
     @GetMapping("read")
-    public ResponseEntity<List<Document>> read(@RequestParam long userId) {
+    public ResponseEntity<List<Document>> read(@RequestParam String userId) {
         if ((this.uri == null) || (this.databaseName == null)) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
@@ -100,13 +112,13 @@ public final class SchemaController {
 
         MongoDatabase database = client.getDatabase(this.databaseName);
 
-        String collectionName = "schemas";
+        MongoCollection<Document> collection = database.getCollection(this.collectionName);
 
-        MongoCollection<Document> collection = database.getCollection(collectionName);
+        String fieldName = "user.$id";
 
-        String fieldName = "userId";
+        ObjectId userObjectId = new ObjectId(userId);
 
-        Bson filter = Filters.eq(fieldName, userId);
+        Bson filter = Filters.eq(fieldName, userObjectId);
 
         FindIterable<Document> iterable = collection.find(filter);
 
