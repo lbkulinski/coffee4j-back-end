@@ -11,18 +11,16 @@
 <script>
     $(function () {
         let data = {
-            "userId": "621c0b99c58fabd2184cff27",
-            "default": false,
-            "fields": {
-                "test": "String"
-            }
+            "firstName": "James",
+            "lastName": "Ekdahl",
+            "email": "james@realtyads.com"
         };
 
         let dataString = JSON.stringify(data);
 
         $.ajax({
             "type": "POST",
-            "url": "http://localhost:8080/api/schema/create",
+            "url": "http://localhost:8080/api/user/create",
             "headers": {
                 "Accept": "application/json",
                 "Content-Type": "application/json"
