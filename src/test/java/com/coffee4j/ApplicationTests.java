@@ -1,13 +1,11 @@
 package com.coffee4j;
 
-import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.Test;
 
 @SpringBootTest
-class Coffee4jApplicationTests {
-
+class ApplicationTests {
     @Test
     void contextLoads() {
     }
-
 }
