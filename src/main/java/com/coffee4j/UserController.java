@@ -16,11 +16,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The REST controller used to interact with the {@code users} MongoDB collection.
+ *
+ * @author Logan Kulinski, lbkulinski@icloud.com
+ * @version March 11, 2022
+ */
 @RestController
 @RequestMapping("api/user")
 public final class UserController {
+    /**
+     * The name of the {@code users} MongoDB collection.
+     */
     private static final String COLLECTION_NAME = "users";
 
+    /**
+     * Attempts to create a user with the specified parameters. A first name, last name, and email is required to
+     * create a user.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return the response to attempting to create a user with the specified parameters
+     */
     @PostMapping("create")
     public ResponseEntity<?> create(@RequestBody Map<String, Object> parameters) {
         String firstNameKey = "firstName";
@@ -87,6 +103,12 @@ public final class UserController {
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //create
 
+    /**
+     * Attempts to read a user's data with the specified parameters. An object ID is required to read a user's data.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return the response to attempting to read a user's data with the specified parameters
+     */
     @GetMapping("read")
     public ResponseEntity<?> read(@RequestParam Map<String, Object> parameters) {
         String idKey = "id";
@@ -144,6 +166,13 @@ public final class UserController {
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
 
+    /**
+     * Attempts to update a user's data with the specified parameters. An object ID is required to update a user's
+     * data. Updates to a user's first name, last name, and email can be made.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return the response to attempting to update a user's data with the specified parameters
+     */
     @PostMapping("update")
     public ResponseEntity<?> update(@RequestBody Map<String, Object> parameters) {
         String idKey = "id";
@@ -242,6 +271,13 @@ public final class UserController {
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //update
 
+    /**
+     * Attempts to delete a user's data with the specified parameters. An object ID is required to delete a user's
+     * data.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return the response to attempting to delete a user's data with the specified parameters
+     */
     @PostMapping("delete")
     public ResponseEntity<?> delete(@RequestBody Map<String, Object> parameters) {
         String idKey = "id";
