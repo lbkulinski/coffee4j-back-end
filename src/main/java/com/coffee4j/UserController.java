@@ -4,6 +4,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -11,7 +12,6 @@ import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -241,4 +241,60 @@ public final class UserController {
 
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //update
+
+    @PostMapping("delete")
+    public ResponseEntity<?> delete(@RequestBody Map<String, Object> parameters) {
+        String idKey = "id";
+
+        String id = Utilities.getParameter(parameters, idKey, String.class);
+
+        if (id == null) {
+            Map<String, Object> errorMap = Map.of(
+                    "success", false,
+                    "message", "An ID is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        id = id.strip();
+
+        ObjectId objectId;
+
+        try {
+            objectId = new ObjectId(id);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> errorMap = Map.of(
+                    "success", false,
+                    "message", "The given ID has an invalid hexadecimal representation"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end try catch
+
+        String fieldName = "_id";
+
+        Bson filter = Filters.eq(fieldName, objectId);
+
+        MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
+
+        DeleteResult deleteResult = collection.deleteOne(filter);
+
+        long deletedCount = deleteResult.getDeletedCount();
+
+        Map<String, Object> responseMap;
+
+        if (deletedCount == 0) {
+            responseMap = Map.of(
+                    "success", false,
+                    "message", "The deletion could not be performed"
+            );
+        } else {
+            responseMap = Map.of(
+                    "success", true
+            );
+        } //end if
+
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+    } //delete
 }
