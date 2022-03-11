@@ -3,6 +3,8 @@ package com.coffee4j;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -141,4 +143,102 @@ public final class UserController {
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
+
+    @PostMapping("update")
+    public ResponseEntity<?> update(@RequestBody Map<String, Object> parameters) {
+        String idKey = "id";
+
+        String id = Utilities.getParameter(parameters, idKey, String.class);
+
+        if (id == null) {
+            Map<String, Object> errorMap = Map.of(
+                "success", false,
+                "message", "An ID is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        id = id.strip();
+
+        ObjectId objectId;
+
+        try {
+            objectId = new ObjectId(id);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> errorMap = Map.of(
+                "success", false,
+                "message", "The given ID has an invalid hexadecimal representation"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end try catch
+
+        String idFieldName = "_id";
+
+        Bson filter = Filters.eq(idFieldName, objectId);
+
+        String firstNameKey = "firstName";
+
+        String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
+
+        List<Bson> updates = new ArrayList<>();
+
+        if (firstName != null) {
+            String fieldName = "firstName";
+
+            Bson update = Updates.set(fieldName, firstName);
+
+            updates.add(update);
+        } //end if
+
+        String lastNameKey = "lastName";
+
+        String lastName = Utilities.getParameter(parameters, lastNameKey, String.class);
+
+        if (lastName != null) {
+            String fieldName = "lastName";
+
+            Bson update = Updates.set(fieldName, lastName);
+
+            updates.add(update);
+        } //end if
+
+        String emailKey = "email";
+
+        String email = Utilities.getParameter(parameters, emailKey, String.class);
+
+        if (email != null) {
+            String fieldName = "email";
+
+            Bson update = Updates.set(fieldName, email);
+
+            updates.add(update);
+        } //end if
+
+        Bson[] updateArray = updates.toArray(Bson[]::new);
+
+        Bson combinedUpdates = Updates.combine(updateArray);
+
+        MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
+
+        UpdateResult updateResult = collection.updateOne(filter, combinedUpdates);
+
+        long modifiedCount = updateResult.getModifiedCount();
+
+        Map<String, Object> responseMap;
+
+        if (modifiedCount == 0) {
+            responseMap = Map.of(
+                "success", false,
+                "message", "The update could not be performed"
+            );
+        } else {
+            responseMap = Map.of(
+                "success", true
+            );
+        } //end if
+
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+    } //update
 }

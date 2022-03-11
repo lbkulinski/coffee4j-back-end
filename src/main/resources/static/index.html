@@ -11,16 +11,15 @@
 <script>
     $(function () {
         let data = {
-            "firstName": "James",
-            "lastName": "Ekdahl",
-            "email": "james@realtyads.com"
+            "id": "621c0b99c58fabd2184cff27",
+            "email": "lbkulinski@icloud.com"
         };
 
         let dataString = JSON.stringify(data);
 
         $.ajax({
             "type": "POST",
-            "url": "http://localhost:8080/api/user/create",
+            "url": "http://localhost:8080/api/user/update",
             "headers": {
                 "Accept": "application/json",
                 "Content-Type": "application/json"
