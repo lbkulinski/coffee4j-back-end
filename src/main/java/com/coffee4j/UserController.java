@@ -1,26 +1,31 @@
 package com.coffee4j;
 
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
-import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.bson.types.ObjectId;
-import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.web.bind.annotation.RequestBody;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.bson.Document;
+import com.mongodb.client.MongoCollection;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.bson.types.ObjectId;
+import org.bson.conversions.Bson;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.FindIterable;
+import java.util.List;
+import java.util.ArrayList;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.UpdateResult;
+import com.mongodb.client.result.DeleteResult;
 
 /**
  * The REST controller used to interact with the {@code users} MongoDB collection.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 11, 2022
+ * @version March 12, 2022
  */
 @RestController
 @RequestMapping("api/user")
@@ -286,8 +291,8 @@ public final class UserController {
 
         if (id == null) {
             Map<String, Object> errorMap = Map.of(
-                    "success", false,
-                    "message", "An ID is required"
+                "success", false,
+                "message", "An ID is required"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
@@ -301,8 +306,8 @@ public final class UserController {
             objectId = new ObjectId(id);
         } catch (IllegalArgumentException e) {
             Map<String, Object> errorMap = Map.of(
-                    "success", false,
-                    "message", "The given ID has an invalid hexadecimal representation"
+                "success", false,
+                "message", "The given ID has an invalid hexadecimal representation"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
@@ -322,12 +327,12 @@ public final class UserController {
 
         if (deletedCount == 0) {
             responseMap = Map.of(
-                    "success", false,
-                    "message", "The deletion could not be performed"
+                "success", false,
+                "message", "The deletion could not be performed"
             );
         } else {
             responseMap = Map.of(
-                    "success", true
+                "success", true
             );
         } //end if
 
