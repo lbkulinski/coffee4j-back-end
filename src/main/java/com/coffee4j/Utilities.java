@@ -110,7 +110,7 @@ public final class Utilities {
 
         Class<?> objectClass = object.getClass();
 
-        if (objectClass != clazz) {
+        if (!clazz.isAssignableFrom(objectClass)) {
             return null;
         } //end if
 

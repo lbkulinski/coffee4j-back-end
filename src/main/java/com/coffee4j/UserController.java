@@ -28,7 +28,7 @@ import com.mongodb.client.result.DeleteResult;
  * @version March 12, 2022
  */
 @RestController
-@RequestMapping("api/user")
+@RequestMapping("api/users")
 public final class UserController {
     /**
      * The name of the {@code users} MongoDB collection.
