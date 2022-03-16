@@ -1,5 +1,6 @@
 package com.coffee4j;
 
+import com.coffee4j.model.User;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,14 +40,12 @@ public final class UserController {
      * Attempts to create a user with the specified parameters. A first name, last name, and email is required to
      * create a user.
      *
-     * @param parameters the parameters to be used in the operation
+     * @param user the parameters to be used in the operation
      * @return the response to attempting to create a user with the specified parameters
      */
     @PostMapping("create")
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> parameters) {
-        String firstNameKey = "firstName";
-
-        String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
+    public ResponseEntity<?> create(@RequestBody User user) {
+        String firstName = user.firstName();
 
         if (firstName == null) {
             Map<String, Object> errorMap = Map.of(
@@ -59,13 +58,7 @@ public final class UserController {
 
         firstName = firstName.strip();
 
-        Document userDocument = new Document();
-
-        userDocument.put(firstNameKey, firstName);
-
-        String lastNameKey = "lastName";
-
-        String lastName = Utilities.getParameter(parameters, lastNameKey, String.class);
+        String lastName = user.lastName();
 
         if (lastName == null) {
             Map<String, Object> errorMap = Map.of(
@@ -78,11 +71,7 @@ public final class UserController {
 
         lastName = lastName.strip();
 
-        userDocument.put(lastNameKey, lastName);
-
-        String emailKey = "email";
-
-        String email = Utilities.getParameter(parameters, emailKey, String.class);
+        String email = user.email();
 
         if (email == null) {
             Map<String, Object> errorMap = Map.of(
@@ -95,7 +84,13 @@ public final class UserController {
 
         email = email.strip();
 
-        userDocument.put(emailKey, email);
+        Map<String, Object> userMap = Map.of(
+            "firstName", firstName,
+            "lastName", lastName,
+            "email", email
+        );
+
+        Document userDocument = new Document(userMap);
 
         MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
 
@@ -111,42 +106,14 @@ public final class UserController {
     /**
      * Attempts to read a user's data with the specified parameters. An object ID is required to read a user's data.
      *
-     * @param parameters the parameters to be used in the operation
+     * @param id the parameters to be used in the operation
      * @return the response to attempting to read a user's data with the specified parameters
      */
     @GetMapping("read")
-    public ResponseEntity<?> read(@RequestParam Map<String, Object> parameters) {
-        String idKey = "id";
-
-        String id = Utilities.getParameter(parameters, idKey, String.class);
-
-        if (id == null) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "An ID is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        id = id.strip();
-
-        ObjectId objectId;
-
-        try {
-            objectId = new ObjectId(id);
-        } catch (IllegalArgumentException e) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "The given ID has an invalid hexadecimal representation"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end try catch
-
+    public ResponseEntity<?> read(@RequestParam ObjectId id) {
         String fieldName = "_id";
 
-        Bson filter = Filters.eq(fieldName, objectId);
+        Bson filter = Filters.eq(fieldName, id);
 
         MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
 
@@ -175,14 +142,12 @@ public final class UserController {
      * Attempts to update a user's data with the specified parameters. An object ID is required to update a user's
      * data. Updates to a user's first name, last name, and email can be made.
      *
-     * @param parameters the parameters to be used in the operation
+     * @param user the parameters to be used in the operation
      * @return the response to attempting to update a user's data with the specified parameters
      */
     @PostMapping("update")
-    public ResponseEntity<?> update(@RequestBody Map<String, Object> parameters) {
-        String idKey = "id";
-
-        String id = Utilities.getParameter(parameters, idKey, String.class);
+    public ResponseEntity<?> update(@RequestBody User user) {
+        ObjectId id = user.id();
 
         if (id == null) {
             Map<String, Object> errorMap = Map.of(
@@ -193,28 +158,9 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        id = id.strip();
+        Bson filter = Filters.eq(id);
 
-        ObjectId objectId;
-
-        try {
-            objectId = new ObjectId(id);
-        } catch (IllegalArgumentException e) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "The given ID has an invalid hexadecimal representation"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end try catch
-
-        String idFieldName = "_id";
-
-        Bson filter = Filters.eq(idFieldName, objectId);
-
-        String firstNameKey = "firstName";
-
-        String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
+        String firstName = user.firstName();
 
         List<Bson> updates = new ArrayList<>();
 
@@ -226,9 +172,7 @@ public final class UserController {
             updates.add(update);
         } //end if
 
-        String lastNameKey = "lastName";
-
-        String lastName = Utilities.getParameter(parameters, lastNameKey, String.class);
+        String lastName = user.lastName();
 
         if (lastName != null) {
             String fieldName = "lastName";
@@ -238,9 +182,7 @@ public final class UserController {
             updates.add(update);
         } //end if
 
-        String emailKey = "email";
-
-        String email = Utilities.getParameter(parameters, emailKey, String.class);
+        String email = user.email();
 
         if (email != null) {
             String fieldName = "email";
@@ -280,42 +222,12 @@ public final class UserController {
      * Attempts to delete a user's data with the specified parameters. An object ID is required to delete a user's
      * data.
      *
-     * @param parameters the parameters to be used in the operation
+     * @param id the parameters to be used in the operation
      * @return the response to attempting to delete a user's data with the specified parameters
      */
     @PostMapping("delete")
-    public ResponseEntity<?> delete(@RequestBody Map<String, Object> parameters) {
-        String idKey = "id";
-
-        String id = Utilities.getParameter(parameters, idKey, String.class);
-
-        if (id == null) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "An ID is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        id = id.strip();
-
-        ObjectId objectId;
-
-        try {
-            objectId = new ObjectId(id);
-        } catch (IllegalArgumentException e) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "The given ID has an invalid hexadecimal representation"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end try catch
-
-        String fieldName = "_id";
-
-        Bson filter = Filters.eq(fieldName, objectId);
+    public ResponseEntity<?> delete(@RequestBody ObjectId id) {
+        Bson filter = Filters.eq(id);
 
         MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
 
