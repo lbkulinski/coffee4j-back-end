@@ -198,6 +198,61 @@ public final class SchemaController {
 
     @GetMapping("read")
     public ResponseEntity<?> read(@RequestParam Map<String, Object> parameters) {
+        String defaultKey = "default";
+
+        Boolean defaultFlag = Utilities.getParameter(parameters, defaultKey, Boolean.class);
+
+        Set<Bson> filters = new HashSet<>();
+
+        if (defaultFlag != null) {
+            Bson filter = Filters.eq(defaultKey, defaultFlag);
+
+            filters.add(filter);
+        } //end if
+
+        String sharedKey = "shared";
+
+        Boolean sharedFlag = Utilities.getParameter(parameters, sharedKey, Boolean.class);
+
+        if (sharedFlag != null) {
+            Bson filter = Filters.eq(sharedKey, sharedFlag);
+
+            filters.add(filter);
+        } //end if
+
+        String creatorIdKey = "creatorId";
+
+        String creatorId = Utilities.getParameter(parameters, creatorIdKey, String.class);
+
+        if (creatorId != null) {
+            ObjectId creatorObjectId;
+
+            try {
+                creatorObjectId = new ObjectId(creatorId);
+            } catch (IllegalArgumentException e) {
+                creatorObjectId = null;
+            } //end try catch
+
+            if (creatorObjectId != null) {
+                Bson filter = Filters.eq(creatorIdKey, creatorObjectId);
+
+                filters.add(filter);
+            } //end if
+        } //end if
+
         return new ResponseEntity<>(HttpStatus.OK);
     } //read
+
+    /*
+{
+  "_id": {
+    "$oid": "621a71c889b7a08edddc9865"
+  },
+  "default": false,
+  "shared": true,
+  "creatorId": {
+    "$oid": "622bd0ecd606500686f74ce7"
+  }
+}
+     */
 }
