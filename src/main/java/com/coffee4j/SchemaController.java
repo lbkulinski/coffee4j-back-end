@@ -1,10 +1,12 @@
 package com.coffee4j;
 
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.conversions.Bson;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
+
 import java.util.*;
 import org.springframework.http.HttpStatus;
 import org.bson.Document;
@@ -173,6 +175,18 @@ public final class SchemaController {
 
         MongoCollection<Document> collection = Utilities.getCollection(SchemaController.COLLECTION_NAME);
 
+        if (defaultFlag) {
+            String creatorIdFieldName = "creatorId";
+
+            Bson filter = Filters.eq(creatorIdFieldName, creatorObjectId);
+
+            String defaultFieldName = "default";
+
+            Bson update = Updates.set(defaultFieldName, false);
+
+            collection.updateMany(filter, update);
+        } //end if
+
         collection.insertOne(schemaDocument);
 
         Map<String, Object> successMap = Map.of(
@@ -181,4 +195,9 @@ public final class SchemaController {
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //create
+
+    @GetMapping("read")
+    public ResponseEntity<?> read(@RequestParam Map<String, Object> parameters) {
+        return new ResponseEntity<>(HttpStatus.OK);
+    } //read
 }
