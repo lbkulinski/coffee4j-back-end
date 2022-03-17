@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
 
 /**
  * A set of utility methods used by the Coffee4j application.
@@ -37,11 +36,6 @@ public final class Utilities {
      * The database name of the {@link Utilities} class.
      */
     public static final String DATABASE_NAME;
-
-    /**
-     * The valid field types of the {@link Utilities} class.
-     */
-    public static final Set<String> VALID_FIELD_TYPES;
 
     static {
         LOGGER = LogManager.getLogger();
@@ -77,14 +71,6 @@ public final class Utilities {
         URI = uri;
 
         DATABASE_NAME = databaseName;
-
-        VALID_FIELD_TYPES = Set.of(
-            "int",
-            "double",
-            "string",
-            "bool",
-            "date"
-        );
     } //static
 
     /**
