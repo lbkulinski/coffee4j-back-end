@@ -26,7 +26,7 @@ import com.mongodb.client.result.DeleteResult;
  * The REST controller used to interact with the {@code users} MongoDB collection.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 16, 2022
+ * @version March 12, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -37,11 +37,11 @@ public final class UserController {
     private static final String COLLECTION_NAME = "users";
 
     /**
-     * Attempts to create a user with the specified {@link User}. A first name, last name, and email is required to
+     * Attempts to create a user with the specified parameters. A first name, last name, and email is required to
      * create a user.
      *
-     * @param user the user to be used in the operation
-     * @return the response to attempting to create a user with the specified {@link User}
+     * @param user the parameters to be used in the operation
+     * @return the response to attempting to create a user with the specified parameters
      */
     @PostMapping("create")
     public ResponseEntity<?> create(@RequestBody User user) {
@@ -104,11 +104,10 @@ public final class UserController {
     } //create
 
     /**
-     * Attempts to read a user's data with the specified {@link ObjectId}. An {@link ObjectId} is required to read a
-     * user's data.
+     * Attempts to read a user's data with the specified parameters. An object ID is required to read a user's data.
      *
-     * @param id the ID to be used in the operation
-     * @return the response to attempting to read a user's data with the specified {@link ObjectId}
+     * @param id the parameters to be used in the operation
+     * @return the response to attempting to read a user's data with the specified parameters
      */
     @GetMapping("read")
     public ResponseEntity<?> read(@RequestParam ObjectId id) {
@@ -140,11 +139,11 @@ public final class UserController {
     } //read
 
     /**
-     * Attempts to update a user's data with the specified {@link User}. A user's {@link ObjectId} is required to
-     * update their data. Updates to a user's first name, last name, and email can be made.
+     * Attempts to update a user's data with the specified parameters. An object ID is required to update a user's
+     * data. Updates to a user's first name, last name, and email can be made.
      *
-     * @param user the user to be used in the operation
-     * @return the response to attempting to update a user's data with the specified {@link User}
+     * @param user the parameters to be used in the operation
+     * @return the response to attempting to update a user's data with the specified parameters
      */
     @PostMapping("update")
     public ResponseEntity<?> update(@RequestBody User user) {
@@ -220,17 +219,14 @@ public final class UserController {
     } //update
 
     /**
-     * Attempts to delete a user's data with the specified user. An object ID is required to delete a user's data.
+     * Attempts to delete a user's data with the specified parameters. An object ID is required to delete a user's
+     * data.
      *
-     * @param id the user to be used in the operation
-     * @return the response to attempting to delete a user's data with the specified user
+     * @param id the parameters to be used in the operation
+     * @return the response to attempting to delete a user's data with the specified parameters
      */
     @PostMapping("delete")
-    public ResponseEntity<?> delete(@RequestParam ObjectId id) {
-        System.out.println(id);
-
-        System.out.println(id.getClass());
-
+    public ResponseEntity<?> delete(@RequestBody ObjectId id) {
         Bson filter = Filters.eq(id);
 
         MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
