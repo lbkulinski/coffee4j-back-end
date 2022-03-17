@@ -1,6 +1,5 @@
 package com.coffee4j;
 
-import com.coffee4j.model.Schema;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import java.util.Set;
@@ -25,8 +24,85 @@ public final class SchemaController {
     private static final String COLLECTION_NAME = "schemas";
 
     @PostMapping("create")
-    public ResponseEntity<?> create(@RequestBody Schema schema) {
-        System.out.println(schema);
+    public ResponseEntity<?> create(@RequestBody Map<String, Object> parameters) {
+        String fieldsKey = "fields";
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> fields = (Map<String, String>) Utilities.getParameter(parameters, fieldsKey, Map.class);
+
+        if (fields == null) {
+            Map<String, Object> errorMap = Map.of(
+                "success", false,
+                "message", "A set of fields is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        for (Map.Entry<?, ?> field : fields.entrySet()) {
+            Object fieldKey = field.getKey();
+
+            Object fieldValue = field.getValue();
+
+            if (!(fieldKey instanceof String)) {
+                Map<String, Object> errorMap = Map.of(
+                    "success", false,
+                    "message", "A field's name must be a string"
+                );
+
+                return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+            } else if (!(fieldValue instanceof Map)) {
+                Map<String, Object> errorMap = Map.of(
+                    "success", false,
+                    "message", "A field's attributes must be an object whose keys and values are strings"
+                );
+
+                return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+            } //end if
+
+            Map<?, ?> attributes = (Map<?, ?>) fieldValue;
+
+            for (Map.Entry<?, ?> attribute : attributes.entrySet()) {
+                Object attributeKey = attribute.getKey();
+
+                Object attributeValue = attribute.getValue();
+
+                if (!(attributeKey instanceof String) || !(attributeValue instanceof String)) {
+                    Map<String, Object> errorMap = Map.of(
+                        "success", false,
+                        "message", "A field attribute's key and value must be a string"
+                    );
+
+                    return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+                } //end if
+            } //end for
+        } //end for
+
+        String defaultKey = "default";
+
+        Boolean defaultFlag = Utilities.getParameter(parameters, defaultKey, Boolean.class);
+
+        if (defaultFlag == null) {
+            Map<String, Object> errorMap = Map.of(
+                "success", false,
+                "message", "A default flag is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String sharedKey = "shared";
+
+        Boolean shared = Utilities.getParameter(parameters, sharedKey, Boolean.class);
+
+        if (shared == null) {
+            Map<String, Object> errorMap = Map.of(
+                "success", false,
+                "message", "A default flag is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
 
         return new ResponseEntity<>(HttpStatus.OK);
     } //create
