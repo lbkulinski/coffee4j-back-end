@@ -29,6 +29,50 @@ public final class UserController {
         LOGGER = LogManager.getLogger();
     } //static
 
+    @PostMapping("create")
+    public ResponseEntity<?> create(@RequestParam Map<String, Object> parameters) {
+        String firstNameKey = "first_name";
+
+        String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
+
+        if (firstName == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "A first name is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String lastNameKey = "last_name";
+
+        String lastName = Utilities.getParameter(parameters, lastNameKey, String.class);
+
+        if (lastName == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "A last name is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String emailKey = "email";
+
+        String email = Utilities.getParameter(parameters, emailKey, String.class);
+
+        if (email == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "An email is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    } //create
+
     @GetMapping("read")
     public ResponseEntity<?> read(@RequestParam Map<String, Object> parameters) {
         String idKey = "id";
@@ -69,16 +113,16 @@ public final class UserController {
         } //end if
 
         String userQuery = """
-                SELECT
-                    `id`,
-                    `first_name`,
-                    `last_name`,
-                    `email`
-                FROM
-                    `coffee_log_users`
-                WHERE
-                    `id` = ?
-                """;
+            SELECT
+                `id`,
+                `first_name`,
+                `last_name`,
+                `email`
+            FROM
+                `coffee_log_users`
+            WHERE
+                `id` = ?
+            """;
 
         ResultSet resultSet;
 
