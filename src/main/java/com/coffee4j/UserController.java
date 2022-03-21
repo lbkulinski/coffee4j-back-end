@@ -1,127 +1,42 @@
 package com.coffee4j;
 
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
-import org.bson.Document;
-import com.mongodb.client.MongoCollection;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.bson.types.ObjectId;
-import org.bson.conversions.Bson;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.FindIterable;
-import java.util.List;
-import java.util.ArrayList;
-import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.UpdateResult;
-import com.mongodb.client.result.DeleteResult;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Map;
 
 /**
- * The REST controller used to interact with the {@code users} MongoDB collection.
+ * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 12, 2022
+ * @version March 21, 2022
  */
 @RestController
 @RequestMapping("api/users")
 public final class UserController {
     /**
-     * The name of the {@code users} MongoDB collection.
+     * The {@link Logger} of the {@link UserController} class.
      */
-    private static final String COLLECTION_NAME = "users";
+    private static final Logger LOGGER;
 
-    /**
-     * Attempts to create a user with the specified parameters. A first name, last name, and email is required to
-     * create a user.
-     *
-     * @param parameters the parameters to be used in the operation
-     * @return the response to attempting to create a user with the specified parameters
-     */
-    @PostMapping("create")
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> parameters) {
-        String firstNameKey = "firstName";
+    static {
+        LOGGER = LogManager.getLogger();
+    } //static
 
-        String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
-
-        if (firstName == null) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "A first name is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        firstName = firstName.strip();
-
-        Document userDocument = new Document();
-
-        userDocument.put(firstNameKey, firstName);
-
-        String lastNameKey = "lastName";
-
-        String lastName = Utilities.getParameter(parameters, lastNameKey, String.class);
-
-        if (lastName == null) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "A last name is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        lastName = lastName.strip();
-
-        userDocument.put(lastNameKey, lastName);
-
-        String emailKey = "email";
-
-        String email = Utilities.getParameter(parameters, emailKey, String.class);
-
-        if (email == null) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "An email is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        email = email.strip();
-
-        userDocument.put(emailKey, email);
-
-        MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
-
-        collection.insertOne(userDocument);
-
-        Map<String, Object> successMap = Map.of(
-            "success", true
-        );
-
-        return new ResponseEntity<>(successMap, HttpStatus.OK);
-    } //create
-
-    /**
-     * Attempts to read a user's data with the specified parameters. An object ID is required to read a user's data.
-     *
-     * @param parameters the parameters to be used in the operation
-     * @return the response to attempting to read a user's data with the specified parameters
-     */
     @GetMapping("read")
     public ResponseEntity<?> read(@RequestParam Map<String, Object> parameters) {
         String idKey = "id";
 
-        String id = Utilities.getParameter(parameters, idKey, String.class);
+        String idString = Utilities.getParameter(parameters, idKey, String.class);
 
-        if (id == null) {
-            Map<String, Object> errorMap = Map.of(
+        if (idString == null) {
+            Map<String, ?> errorMap = Map.of(
                 "success", false,
                 "message", "An ID is required"
             );
@@ -129,213 +44,96 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        id = id.strip();
-
-        ObjectId objectId;
+        int id;
 
         try {
-            objectId = new ObjectId(id);
-        } catch (IllegalArgumentException e) {
-            Map<String, Object> errorMap = Map.of(
+            id = Integer.parseInt(idString);
+        } catch (NumberFormatException e) {
+            Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "The given ID has an invalid hexadecimal representation"
+                "message", "The specified ID must be an integer"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end try catch
 
-        String fieldName = "_id";
+        Connection connection = Utilities.getConnection();
 
-        Bson filter = Filters.eq(fieldName, objectId);
-
-        MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
-
-        FindIterable<Document> iterable = collection.find(filter);
-
-        Document userDocument = iterable.first();
-
-        if (userDocument == null) {
-            Map<String, Object> errorMap = Map.of(
+        if (connection == null) {
+            Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "A user with the given ID could not be found"
+                "message", "The user's data could not be retrieved"
             );
 
-            return new ResponseEntity<>(errorMap, HttpStatus.OK);
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
-        Map<String, Object> successMap = Map.of(
-            "success", true,
-            "user", userDocument
-        );
+        String userQuery = """
+                SELECT
+                    `id`,
+                    `first_name`,
+                    `last_name`,
+                    `email`
+                FROM
+                    `coffee_log_users`
+                WHERE
+                    `id` = ?
+                """;
+
+        ResultSet resultSet;
+
+        Map<String, ?> successMap;
+
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(userQuery);
+
+            int idIndex = 1;
+
+            preparedStatement.setInt(idIndex, id);
+
+            resultSet = preparedStatement.executeQuery();
+
+            if (!resultSet.next()) {
+                Map<String, ?> errorMap = Map.of(
+                    "success", false,
+                    "message", "A user with the specified ID could not be found"
+                );
+
+                return new ResponseEntity<>(errorMap, HttpStatus.OK);
+            } //end if
+
+            int userId = resultSet.getInt("id");
+
+            String firstName = resultSet.getString("first_name");
+
+            String lastName = resultSet.getString("last_name");
+
+            String email = resultSet.getString("email");
+
+            Map<String, ?> dataMap = Map.of(
+                "id", userId,
+                "first_name", firstName,
+                "last_name", lastName,
+                "email", email
+            );
+
+            successMap = Map.of(
+                "success", true,
+                "data", dataMap
+            );
+        } catch (SQLException e) {
+            UserController.LOGGER.atError()
+                                 .withThrowable(e)
+                                 .log();
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The user's data could not be retrieved"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
-
-    /**
-     * Attempts to update a user's data with the specified parameters. An object ID is required to update a user's
-     * data. Updates to a user's first name, last name, and email can be made.
-     *
-     * @param parameters the parameters to be used in the operation
-     * @return the response to attempting to update a user's data with the specified parameters
-     */
-    @PostMapping("update")
-    public ResponseEntity<?> update(@RequestBody Map<String, Object> parameters) {
-        String idKey = "id";
-
-        String id = Utilities.getParameter(parameters, idKey, String.class);
-
-        if (id == null) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "An ID is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        id = id.strip();
-
-        ObjectId objectId;
-
-        try {
-            objectId = new ObjectId(id);
-        } catch (IllegalArgumentException e) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "The given ID has an invalid hexadecimal representation"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end try catch
-
-        String idFieldName = "_id";
-
-        Bson filter = Filters.eq(idFieldName, objectId);
-
-        String firstNameKey = "firstName";
-
-        String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
-
-        List<Bson> updates = new ArrayList<>();
-
-        if (firstName != null) {
-            String fieldName = "firstName";
-
-            Bson update = Updates.set(fieldName, firstName);
-
-            updates.add(update);
-        } //end if
-
-        String lastNameKey = "lastName";
-
-        String lastName = Utilities.getParameter(parameters, lastNameKey, String.class);
-
-        if (lastName != null) {
-            String fieldName = "lastName";
-
-            Bson update = Updates.set(fieldName, lastName);
-
-            updates.add(update);
-        } //end if
-
-        String emailKey = "email";
-
-        String email = Utilities.getParameter(parameters, emailKey, String.class);
-
-        if (email != null) {
-            String fieldName = "email";
-
-            Bson update = Updates.set(fieldName, email);
-
-            updates.add(update);
-        } //end if
-
-        Bson[] updateArray = updates.toArray(Bson[]::new);
-
-        Bson combinedUpdates = Updates.combine(updateArray);
-
-        MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
-
-        UpdateResult updateResult = collection.updateOne(filter, combinedUpdates);
-
-        long modifiedCount = updateResult.getModifiedCount();
-
-        Map<String, Object> responseMap;
-
-        if (modifiedCount == 0) {
-            responseMap = Map.of(
-                "success", false,
-                "message", "The update could not be performed"
-            );
-        } else {
-            responseMap = Map.of(
-                "success", true
-            );
-        } //end if
-
-        return new ResponseEntity<>(responseMap, HttpStatus.OK);
-    } //update
-
-    /**
-     * Attempts to delete a user's data with the specified parameters. An object ID is required to delete a user's
-     * data.
-     *
-     * @param parameters the parameters to be used in the operation
-     * @return the response to attempting to delete a user's data with the specified parameters
-     */
-    @PostMapping("delete")
-    public ResponseEntity<?> delete(@RequestBody Map<String, Object> parameters) {
-        String idKey = "id";
-
-        String id = Utilities.getParameter(parameters, idKey, String.class);
-
-        if (id == null) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "An ID is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        id = id.strip();
-
-        ObjectId objectId;
-
-        try {
-            objectId = new ObjectId(id);
-        } catch (IllegalArgumentException e) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "The given ID has an invalid hexadecimal representation"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end try catch
-
-        String fieldName = "_id";
-
-        Bson filter = Filters.eq(fieldName, objectId);
-
-        MongoCollection<Document> collection = Utilities.getCollection(UserController.COLLECTION_NAME);
-
-        DeleteResult deleteResult = collection.deleteOne(filter);
-
-        long deletedCount = deleteResult.getDeletedCount();
-
-        Map<String, Object> responseMap;
-
-        if (deletedCount == 0) {
-            responseMap = Map.of(
-                "success", false,
-                "message", "The deletion could not be performed"
-            );
-        } else {
-            responseMap = Map.of(
-                "success", true
-            );
-        } //end if
-
-        return new ResponseEntity<>(responseMap, HttpStatus.OK);
-    } //delete
 }

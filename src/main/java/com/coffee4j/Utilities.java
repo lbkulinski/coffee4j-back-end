@@ -1,16 +1,14 @@
 package com.coffee4j;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bson.Document;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -19,7 +17,7 @@ import java.util.Properties;
  * A set of utility methods used by the Coffee4j application.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 11, 2022
+ * @version March 21, 2022
  */
 public final class Utilities {
     /**
@@ -32,17 +30,10 @@ public final class Utilities {
      */
     private static final String URI;
 
-    /**
-     * The database name of the {@link Utilities} class.
-     */
-    public static final String DATABASE_NAME;
-
     static {
         LOGGER = LogManager.getLogger();
 
         String uri = null;
-
-        String databaseName = null;
 
         try {
             String pathString = "src/main/resources/database.properties";
@@ -58,10 +49,6 @@ public final class Utilities {
             String uriKey = "uri";
 
             uri = properties.getProperty(uriKey);
-
-            String databaseNameKey = "databaseName";
-
-            databaseName = properties.getProperty(databaseNameKey);
         } catch (IOException e) {
             LOGGER.atError()
                   .withThrowable(e)
@@ -69,8 +56,6 @@ public final class Utilities {
         } //end try catch
 
         URI = uri;
-
-        DATABASE_NAME = databaseName;
     } //static
 
     /**
@@ -118,19 +103,23 @@ public final class Utilities {
     } //getValue
 
     /**
-     * Returns the MongoDB collection with the specified collection name.
+     * Returns a {@link Connection} to the Coffee4j database or {@code null} if one could not be made
      *
-     * @param collectionName the collection name to be used in the operation
-     * @return the MongoDB collection with the specified collection name
-     * @throws NullPointerException if the specified collection name is {@code null}
+     * @return a {@link Connection} to the Coffee4j database or {@code null} if one could not be made
      */
-    public static MongoCollection<Document> getCollection(String collectionName) {
-        Objects.requireNonNull(collectionName, "the specified collection name is null");
+    public static Connection getConnection() {
+        Connection connection;
 
-        MongoClient client = MongoClients.create(Utilities.URI);
+        try {
+            connection = DriverManager.getConnection(Utilities.URI);
+        } catch (SQLException e) {
+            Utilities.LOGGER.atError()
+                            .withThrowable(e)
+                            .log();
 
-        MongoDatabase database = client.getDatabase(Utilities.DATABASE_NAME);
+            return null;
+        } //end try catch
 
-        return database.getCollection(collectionName);
-    } //getCollection
+        return connection;
+    } //getConnection
 }
