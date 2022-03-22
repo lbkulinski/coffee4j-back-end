@@ -30,8 +30,15 @@ public final class UserController {
         LOGGER = LogManager.getLogger();
     } //static
 
+    /**
+     * Attempts to create a new user using the specified parameters. A first name, last name, email, and password are
+     * required for creation.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the create operation
+     */
     @PostMapping("create")
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> parameters) {
+    public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
         String firstNameKey = "first_name";
 
         String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
@@ -172,6 +179,12 @@ public final class UserController {
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //create
 
+    /**
+     * Attempts to read existing user data using the specified parameters. An ID is required for reading.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the read operation
+     */
     @GetMapping("read")
     public ResponseEntity<?> read(@RequestParam Map<String, Object> parameters) {
         String idKey = "id";
@@ -274,6 +287,13 @@ public final class UserController {
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
 
+    /**
+     * Attempts to update existing user data using the specified parameters. An ID is required for updating. A user's
+     * first name, last name, email, and password can be updated. At least one is required.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the update operation
+     */
     @PostMapping("update")
     public ResponseEntity<?> update(@RequestBody Map<String, Object> parameters) {
         String idKey = "id";
@@ -431,6 +451,12 @@ public final class UserController {
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //update
 
+    /**
+     * Attempts to delete an existing user using the specified parameters. An ID is required for deletion.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
     @PostMapping("delete")
     public ResponseEntity<?> delete(@RequestBody Map<String, Object> parameters) {
         String idKey = "id";
