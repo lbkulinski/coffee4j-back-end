@@ -180,7 +180,8 @@ public final class UserController {
     } //create
 
     /**
-     * Attempts to read existing user data using the specified parameters. An ID is required for reading.
+     * Attempts to read existing user data using the specified parameters. An ID is required for reading. Assuming a
+     * user with the specified ID exists, their first name, last name, and email are returned.
      *
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
@@ -423,7 +424,7 @@ public final class UserController {
                 "message", "The user's data could not be updated"
             );
 
-            return new ResponseEntity<>(errorMap, HttpStatus.OK);
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } finally {
             try {
                 connection.close();
@@ -508,7 +509,7 @@ public final class UserController {
                 "message", "The user could not be deleted"
             );
 
-            return new ResponseEntity<>(errorMap, HttpStatus.OK);
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } finally {
             try {
                 connection.close();
