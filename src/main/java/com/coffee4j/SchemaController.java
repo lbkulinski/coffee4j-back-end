@@ -28,14 +28,14 @@ public final class SchemaController {
             return null;
         } //end if
 
-        String removeDefaultStatement = """
+        String updateDefaultStatement = """
             UPDATE `coffee_log_schemas`
             SET
                 `default` = '0'
             WHERE
                 `creator_id` = ?""";
 
-        String createSchemaStatement = """
+        String insertSchemaStatement = """
             INSERT INTO `coffee_log_schemas` (
                 `creator_id`,
                 `default`,
@@ -49,13 +49,13 @@ public final class SchemaController {
         String id;
 
         try {
-            PreparedStatement defaultPreparedStatement = connection.prepareStatement(removeDefaultStatement);
+            PreparedStatement defaultPreparedStatement = connection.prepareStatement(updateDefaultStatement);
 
             defaultPreparedStatement.setString(1, creatorId);
 
             defaultPreparedStatement.executeUpdate();
 
-            PreparedStatement schemaPreparedStatement = connection.prepareStatement(createSchemaStatement,
+            PreparedStatement schemaPreparedStatement = connection.prepareStatement(insertSchemaStatement,
                                                                                     Statement.RETURN_GENERATED_KEYS);
 
             schemaPreparedStatement.setString(1, creatorId);
@@ -183,6 +183,44 @@ public final class SchemaController {
 
         return Collections.unmodifiableList(fieldsCopy);
     } //getFields
+
+    private String createField(String name, String typeId, String displayName) {
+        Connection connection = Utilities.getConnection();
+
+        if (connection == null) {
+            return null;
+        } //end if
+
+        String insertFieldStatementTemplate = """
+            INSERT INTO `coffee_log_fields` (
+                `name`,
+                `type_id`,
+                `display_name`
+            ) VALUES
+            %s
+            """;
+
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(insertFieldStatementTemplate,
+                                                                              Statement.RETURN_GENERATED_KEYS);
+        } catch (SQLException e) {
+            SchemaController.LOGGER.atError()
+                                   .withThrowable(e)
+                                   .log();
+
+            return null;
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                SchemaController.LOGGER.atError()
+                                       .withThrowable(e)
+                                       .log();
+            } //end try catch
+        } //end try catch
+
+        return null;
+    } //createField
 
     @PostMapping("create")
     public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
