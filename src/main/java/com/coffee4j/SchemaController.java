@@ -184,12 +184,54 @@ public final class SchemaController {
         return Collections.unmodifiableList(fieldsCopy);
     } //getFields
 
-    private String createField(String name, String typeId, String displayName) {
+    private Set<String> createFields(List<Map<String, String>> fields) {
         Connection connection = Utilities.getConnection();
 
         if (connection == null) {
             return null;
         } //end if
+
+        List<String> valuesPlaceholders = new ArrayList<>();
+
+        List<String> valuesArguments = new ArrayList<>();
+
+        for (Map<String, String> field : fields) {
+            String name = field.get("name");
+
+            if (name == null) {
+                continue;
+            } //end if
+
+            String typeId = field.get("type_id");
+
+            if (typeId == null) {
+                continue;
+            } //end if
+
+            String displayName = field.get("display_name");
+
+            if (displayName == null) {
+                continue;
+            } //end if
+
+            String valuesPlaceholder = "(? , ? , ?)";
+
+            valuesPlaceholders.add(valuesPlaceholder);
+
+            valuesArguments.add(name);
+
+            valuesArguments.add(typeId);
+
+            valuesArguments.add(displayName);
+        } //end for
+
+        if (valuesPlaceholders.isEmpty()) {
+            return null;
+        } //end if
+
+        String valuesPlaceholdersString = valuesPlaceholders.stream()
+                                                            .reduce("%s,\n%s"::formatted)
+                                                            .get();
 
         String insertFieldStatementTemplate = """
             INSERT INTO `coffee_log_fields` (
@@ -200,9 +242,31 @@ public final class SchemaController {
             %s
             """;
 
+        String insertFieldStatement = insertFieldStatementTemplate.formatted(valuesPlaceholdersString);
+
+        Set<String> ids = new HashSet<>();
+
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(insertFieldStatementTemplate,
+            PreparedStatement preparedStatement = connection.prepareStatement(insertFieldStatement,
                                                                               Statement.RETURN_GENERATED_KEYS);
+
+            for (int i = 0; i < valuesArguments.size(); i++) {
+                int parameterIndex = i + 1;
+
+                String valuesArgument = valuesArguments.get(i);
+
+                preparedStatement.setString(parameterIndex, valuesArgument);
+            } //end for
+
+            preparedStatement.executeUpdate();
+
+            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+
+            while (resultSet.next()) {
+                String id = resultSet.getString(1);
+
+                ids.add(id);
+            } //end while
         } catch (SQLException e) {
             SchemaController.LOGGER.atError()
                                    .withThrowable(e)
@@ -219,8 +283,8 @@ public final class SchemaController {
             } //end try catch
         } //end try catch
 
-        return null;
-    } //createField
+        return ids;
+    } //createFields
 
     @PostMapping("create")
     public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
@@ -307,6 +371,8 @@ public final class SchemaController {
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
+
+        Set<String> fieldIds = this.createFields(fields);
 
         return new ResponseEntity<>(HttpStatus.OK);
     } //create
