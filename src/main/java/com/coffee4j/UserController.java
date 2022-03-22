@@ -187,7 +187,7 @@ public final class UserController {
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping("read")
-    public ResponseEntity<?> read(@RequestParam Map<String, Object> parameters) {
+    public ResponseEntity<Map<String, ?>> read(@RequestParam Map<String, Object> parameters) {
         String idKey = "id";
 
         String id = Utilities.getParameter(parameters, idKey, String.class);
@@ -296,7 +296,7 @@ public final class UserController {
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
     @PostMapping("update")
-    public ResponseEntity<?> update(@RequestBody Map<String, Object> parameters) {
+    public ResponseEntity<Map<String, ?>> update(@RequestBody Map<String, Object> parameters) {
         String idKey = "id";
 
         String id = Utilities.getParameter(parameters, idKey, String.class);
@@ -459,7 +459,7 @@ public final class UserController {
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
      */
     @PostMapping("delete")
-    public ResponseEntity<?> delete(@RequestBody Map<String, Object> parameters) {
+    public ResponseEntity<Map<String, ?>> delete(@RequestBody Map<String, Object> parameters) {
         String idKey = "id";
 
         String id = Utilities.getParameter(parameters, idKey, String.class);
