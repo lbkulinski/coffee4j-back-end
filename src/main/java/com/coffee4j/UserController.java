@@ -3,6 +3,7 @@ package com.coffee4j;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import java.sql.Connection;
@@ -30,7 +31,7 @@ public final class UserController {
     } //static
 
     @PostMapping("create")
-    public ResponseEntity<?> create(@RequestParam Map<String, Object> parameters) {
+    public ResponseEntity<?> create(@RequestBody Map<String, Object> parameters) {
         String firstNameKey = "first_name";
 
         String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
@@ -70,7 +71,106 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        String passwordKey = "password";
+
+        String password = Utilities.getParameter(parameters, passwordKey, String.class);
+
+        if (password == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "A password is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String salt = BCrypt.gensalt();
+
+        String passwordHash = BCrypt.hashpw(password, salt);
+
+        Connection connection = Utilities.getConnection();
+
+        if (connection == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The user could not be created"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
+        String userInsertStatement = """
+            INSERT INTO `coffee_log_users` (
+                `first_name`,
+                `last_name`,
+                `email`,
+                `password_hash`
+            ) VALUES (
+                ?,
+                ?,
+                ?,
+                ?
+            )
+            """;
+
+        int rowChangeCount;
+
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(userInsertStatement);
+
+            int firstNameIndex = 1;
+
+            preparedStatement.setString(firstNameIndex, firstName);
+
+            int lastNameIndex = 2;
+
+            preparedStatement.setString(lastNameIndex, lastName);
+
+            int emailIndex = 3;
+
+            preparedStatement.setString(emailIndex, email);
+
+            int passwordHashIndex = 4;
+
+            preparedStatement.setString(passwordHashIndex, passwordHash);
+
+            rowChangeCount = preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            UserController.LOGGER.atError()
+                                 .withThrowable(e)
+                                 .log();
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The user could not be created"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                UserController.LOGGER.atError()
+                                     .withThrowable(e)
+                                     .log();
+            } //end try catch
+        } //end try catch finally
+
+        Map<String, ?> responseMap;
+
+        if (rowChangeCount == 0) {
+            responseMap = Map.of(
+                "success", false,
+                "message", "The user could not be created"
+            );
+        } else {
+            responseMap = Map.of(
+                "success", true,
+                "message", "The user was successfully created"
+            );
+        } //end if
+
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //create
 
     @GetMapping("read")
@@ -176,7 +276,15 @@ public final class UserController {
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } //end try catch
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                UserController.LOGGER.atError()
+                                     .withThrowable(e)
+                                     .log();
+            } //end try catch
+        } //end try catch finally
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
