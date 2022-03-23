@@ -541,7 +541,7 @@ public final class SchemaController {
             connection.commit();
 
             responseMap = Map.of(
-                "success", false,
+                "success", true,
                 "message", "The schema was successfully created"
             );
         } else {
@@ -611,8 +611,8 @@ public final class SchemaController {
 
         if (fields == null) {
             Map<String, ?> errorMap = Map.of(
-                    "success", false,
-                    "message", "A Set of fields is required"
+                "success", false,
+                "message", "A Set of fields is required"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);

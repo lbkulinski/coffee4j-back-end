@@ -100,7 +100,7 @@ public final class UserController {
         if (connection == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "A connection to the database could not be established"
+                "message", "The user could not be created"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -210,7 +210,7 @@ public final class UserController {
         if (connection == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "A connection to the database could not be established"
+                "message", "The user's data could not be retrieved"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -231,7 +231,7 @@ public final class UserController {
 
         ResultSet resultSet = null;
 
-        Map<String, ?> successMap;
+        Map<String, ?> dataMap;
 
         try {
             preparedStatement = connection.prepareStatement(userQuery);
@@ -257,16 +257,11 @@ public final class UserController {
 
             String email = resultSet.getString("email");
 
-            Map<String, ?> dataMap = Map.of(
+            dataMap = Map.of(
                 "id", userId,
                 "first_name", firstName,
                 "last_name", lastName,
                 "email", email
-            );
-
-            successMap = Map.of(
-                "success", true,
-                "data", dataMap
             );
         } catch (SQLException e) {
             UserController.LOGGER.atError()
@@ -308,6 +303,11 @@ public final class UserController {
                 } //end try catch
             } //end if
         } //end try catch finally
+
+        Map<String, ?> successMap = Map.of(
+            "success", true,
+            "data", dataMap
+        );
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
@@ -406,7 +406,7 @@ public final class UserController {
         if (connection == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "A connection to the database could not be established"
+                "message", "The user's data could not be updated"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -514,7 +514,7 @@ public final class UserController {
         if (connection == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "A connection to the database could not be established"
+                "message", "The user could not be deleted"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
