@@ -21,6 +21,17 @@ public final class SchemaController {
         LOGGER = LogManager.getLogger();
     } //static
 
+    /**
+     * Attempts to create a schema using the specified connection, creator ID, default flag, and shared flag.
+     *
+     * @param connection the connection to be used in the operation
+     * @param creatorId the creator ID to be used in the operation
+     * @param defaultFlag the default flag to be used in the operation
+     * @param sharedFlag the shared flag to be used in the operation
+     * @return the ID of the created schema or {@code null} if an error occurred
+     * @throws SQLException if a SQL error occurs during the operation
+     * @throws NullPointerException if the specified connection or creator ID is {@code null}
+     */
     private String createSchema(Connection connection, String creatorId, boolean defaultFlag,
                                 boolean sharedFlag) throws SQLException {
         Objects.requireNonNull(connection, "the specified connection is null");
@@ -115,6 +126,14 @@ public final class SchemaController {
         return id;
     } //createSchema
 
+    /**
+     * Returns the valid type IDs using the specified connection.
+     *
+     * @param connection the connection to be used in the operation
+     * @return the valid type IDs using the specified connection
+     * @throws SQLException if a SQL error occurs during the operation
+     * @throws NullPointerException if the specified connection is {@code null}
+     */
     private Set<String> getValidTypeIds(Connection connection) throws SQLException {
         Objects.requireNonNull(connection, "the specified connection is null");
 
@@ -165,8 +184,17 @@ public final class SchemaController {
         return typeIds;
     } //getValidTypeIds
 
-    private List<Map<String, String>> getFields(Connection connection,
-                                                List<Map<String, String>> fields) throws SQLException {
+    /**
+     * Verifies the specified {@link List} of field data using the specified connection.
+     *
+     * @param connection the connection to be used in the operation
+     * @param fields the {@link List} of field data to be used in the operation
+     * @return the verified {@link List} of field data or {@code null} if the specified {@link List} is malformed
+     * @throws SQLException if a SQL error occurs during the operation
+     * @throws NullPointerException if the specified connection or {@link List} of field data is {@code null}
+     */
+    private List<Map<String, String>> verifyFields(Connection connection,
+                                                   List<Map<String, String>> fields) throws SQLException {
         Objects.requireNonNull(connection, "the specified connection is null");
 
         Objects.requireNonNull(fields, "the specified List of fields is null");
@@ -176,6 +204,10 @@ public final class SchemaController {
         List<Map<String, String>> fieldsCopy = new ArrayList<>();
 
         for (Map<String, ?> field : fields) {
+            if (field == null) {
+                return null;
+            } //end if
+
             Object nameObject = field.get("name");
 
             if (!(nameObject instanceof String name)) {
@@ -210,6 +242,15 @@ public final class SchemaController {
         return Collections.unmodifiableList(fieldsCopy);
     } //getFields
 
+    /**
+     * Attempts to create fields for the specified {@link List} of field data using the specified connection.
+     *
+     * @param connection the connection to be used in the operation
+     * @param fields the {@link List} of field data to be used in the operation
+     * @return the {@link Set} of created field IDs or {@code null} if an error occurred
+     * @throws SQLException if a SQL error occurs during the operation
+     * @throws NullPointerException if the specified connection or {@link List} of field data is {@code null}
+     */
     private Set<String> createFields(Connection connection, List<Map<String, String>> fields) throws SQLException {
         Objects.requireNonNull(connection, "the specified connection is null");
 
@@ -221,25 +262,25 @@ public final class SchemaController {
 
         for (Map<String, String> field : fields) {
             if (field == null) {
-                continue;
+                return null;
             } //end if
 
             String name = field.get("name");
 
             if (name == null) {
-                continue;
+                return null;
             } //end if
 
             String typeId = field.get("type_id");
 
             if (typeId == null) {
-                continue;
+                return null;
             } //end if
 
             String displayName = field.get("display_name");
 
             if (displayName == null) {
-                continue;
+                return null;
             } //end if
 
             String valuesPlaceholder = "(? , ? , ?)";
@@ -322,8 +363,19 @@ public final class SchemaController {
         return ids;
     } //createFields
 
-    private boolean createSchemaFieldsAssociation(Connection connection, String schemaId,
-                                                  Set<String> fieldIds) throws SQLException {
+    /**
+     * Attempts to create associations between the specified schema ID and {@link Set} of field IDs using the specified
+     * connection.
+     *
+     * @param connection the connection to be used in the operation
+     * @param schemaId the schema ID to be used in the operation
+     * @param fieldIds the {@link Set} of field IDs to be used in the operation
+     * @return {@code true}, if the associations were successfully created and {@code false} otherwise
+     * @throws SQLException if a SQL error occurs during the operation
+     * @throws NullPointerException if the specified connection, schema ID, or {@link Set} of field IDs is {@code null}
+     */
+    private boolean createAssociation(Connection connection, String schemaId,
+                                      Set<String> fieldIds) throws SQLException {
         Objects.requireNonNull(connection, "the specified connection is null");
 
         Objects.requireNonNull(schemaId, "the specified schema ID is null");
@@ -394,8 +446,8 @@ public final class SchemaController {
             } //end if
         } //end try catch finally
 
-        return rowsChanged > 0;
-    } //createSchemaFieldsAssociation
+        return rowsChanged == fieldIds.size();
+    } //createAssociation
 
     private ResponseEntity<Map<String, ?>> createHelper(Connection connection, String creatorId, boolean defaultFlag,
                                                         boolean sharedFlag,
@@ -432,7 +484,7 @@ public final class SchemaController {
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        fields = this.getFields(connection, fields);
+        fields = this.verifyFields(connection, fields);
 
         if (fields == null) {
             Map<String, ?> errorMap = Map.of(
@@ -458,7 +510,7 @@ public final class SchemaController {
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
-        boolean successful = this.createSchemaFieldsAssociation(connection, schemaId, fieldIds);
+        boolean successful = this.createAssociation(connection, schemaId, fieldIds);
 
         Map<String, ?> responseMap;
 
