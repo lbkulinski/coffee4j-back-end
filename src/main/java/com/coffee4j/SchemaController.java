@@ -450,7 +450,7 @@ public final class SchemaController {
         if (fieldIds == null) {
             Map<String, Object> errorMap = Map.of(
                 "success", false,
-                "message", "The fields could not be created"
+                "message", "The schema could not be created"
             );
 
             connection.rollback();
@@ -555,6 +555,14 @@ public final class SchemaController {
             SchemaController.LOGGER.atError()
                                    .withThrowable(e)
                                    .log();
+
+            try {
+                connection.rollback();
+            } catch (SQLException f) {
+                SchemaController.LOGGER.atError()
+                                       .withThrowable(f)
+                                       .log();
+            } //end try catch
 
             Map<String, Object> errorMap = Map.of(
                 "success", false,
