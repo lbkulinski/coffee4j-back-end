@@ -21,7 +21,8 @@ public final class SchemaController {
         LOGGER = LogManager.getLogger();
     } //static
 
-    private String createSchema(Connection connection, String creatorId, boolean defaultFlag, boolean sharedFlag) {
+    private String createSchema(Connection connection, String creatorId, boolean defaultFlag,
+                                boolean sharedFlag) throws SQLException {
         Objects.requireNonNull(connection, "the specified connection is null");
 
         Objects.requireNonNull(creatorId, "the specified creator ID is null");
@@ -79,12 +80,6 @@ public final class SchemaController {
             int idIndex = 1;
 
             id = resultSet.getString(idIndex);
-        } catch (SQLException e) {
-            SchemaController.LOGGER.atError()
-                                   .withThrowable(e)
-                                   .log();
-
-            return null;
         } finally {
             if (defaultPreparedStatement != null) {
                 try {
@@ -120,7 +115,7 @@ public final class SchemaController {
         return id;
     } //createSchema
 
-    private Set<String> getValidTypeIds(Connection connection) {
+    private Set<String> getValidTypeIds(Connection connection) throws SQLException {
         Objects.requireNonNull(connection, "the specified connection is null");
 
         String typeIdsQuery = """
@@ -145,12 +140,6 @@ public final class SchemaController {
 
                 typeIds.add(typeId);
             } //end while
-        } catch (SQLException e) {
-            SchemaController.LOGGER.atError()
-                                   .withThrowable(e)
-                                   .log();
-
-            return Set.of();
         } finally {
             if (statement != null) {
                 try {
@@ -176,14 +165,13 @@ public final class SchemaController {
         return typeIds;
     } //getValidTypeIds
 
-    private List<Map<String, String>> getFields(List<Map<String, String>> fields) {
-        Objects.requireNonNull(fields, "the specified Set of fields is null");
+    private List<Map<String, String>> getFields(Connection connection,
+                                                List<Map<String, String>> fields) throws SQLException {
+        Objects.requireNonNull(connection, "the specified connection is null");
 
-        Set<String> validTypeIds = this.getValidTypeIds();
+        Objects.requireNonNull(fields, "the specified List of fields is null");
 
-        if (validTypeIds == null) {
-            return null;
-        } //end if
+        Set<String> validTypeIds = this.getValidTypeIds(connection);
 
         List<Map<String, String>> fieldsCopy = new ArrayList<>();
 
@@ -222,7 +210,7 @@ public final class SchemaController {
         return Collections.unmodifiableList(fieldsCopy);
     } //getFields
 
-    private Set<String> createFields(Connection connection, List<Map<String, String>> fields) {
+    private Set<String> createFields(Connection connection, List<Map<String, String>> fields) throws SQLException {
         Objects.requireNonNull(connection, "the specified connection is null");
 
         Objects.requireNonNull(fields, "the specified List of fields is null");
@@ -309,12 +297,6 @@ public final class SchemaController {
 
                 ids.add(id);
             } //end while
-        } catch (SQLException e) {
-            SchemaController.LOGGER.atError()
-                                   .withThrowable(e)
-                                   .log();
-
-            return null;
         } finally {
             if (preparedStatement != null) {
                 try {
@@ -340,7 +322,8 @@ public final class SchemaController {
         return ids;
     } //createFields
 
-    private boolean createSchemaFieldsAssociation(Connection connection, String schemaId, Set<String> fieldIds) {
+    private boolean createSchemaFieldsAssociation(Connection connection, String schemaId,
+                                                  Set<String> fieldIds) throws SQLException {
         Objects.requireNonNull(connection, "the specified connection is null");
 
         Objects.requireNonNull(schemaId, "the specified schema ID is null");
@@ -399,12 +382,6 @@ public final class SchemaController {
             } //end for
 
             rowsChanged = preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            SchemaController.LOGGER.atError()
-                                   .withThrowable(e)
-                                   .log();
-
-            return false;
         } finally {
             if (preparedStatement != null) {
                 try {
@@ -420,20 +397,14 @@ public final class SchemaController {
         return rowsChanged > 0;
     } //createSchemaFieldsAssociation
 
-    private ResponseEntity<Map<String, ?>> createHelper(String creatorId, boolean defaultFlag, boolean sharedFlag,
+    private ResponseEntity<Map<String, ?>> createHelper(Connection connection, String creatorId, boolean defaultFlag,
+                                                        boolean sharedFlag,
                                                         List<Map<String, String>> fields) throws SQLException {
-        Objects.requireNonNull(creatorId);
+        Objects.requireNonNull(connection, "the specified connection is null");
 
-        Connection connection = Utilities.getConnection();
+        Objects.requireNonNull(creatorId, "the specified creator ID is null");
 
-        if (connection == null) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "The schema could not be created"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } //end if
+        Objects.requireNonNull(fields, "the specified List of fields is null");
 
         connection.setAutoCommit(false);
 
@@ -441,46 +412,74 @@ public final class SchemaController {
 
         if (schemaId == null) {
             Map<String, Object> errorMap = Map.of(
-                    "success", false,
-                    "message", "The schema could not be created"
+                "success", false,
+                "message", "The schema could not be created"
             );
+
+            connection.rollback();
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
         if (fields.isEmpty()) {
             Map<String, ?> errorMap = Map.of(
-                    "success", false,
-                    "message", "At least one field must be specified"
+                "success", false,
+                "message", "At least one field must be specified"
             );
+
+            connection.rollback();
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        fields = this.getFields(fields);
+        fields = this.getFields(connection, fields);
 
         if (fields == null) {
             Map<String, ?> errorMap = Map.of(
-                    "success", false,
-                    "message", "The specified Set of fields is malformed"
+                "success", false,
+                "message", "The specified Set of fields is malformed"
             );
+
+            connection.rollback();
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        Set<String> fieldIds = this.createFields(fields);
+        Set<String> fieldIds = this.createFields(connection, fields);
 
         if (fieldIds == null) {
             Map<String, Object> errorMap = Map.of(
-                    "success", false,
-                    "message", "The fields could not be created"
+                "success", false,
+                "message", "The fields could not be created"
             );
+
+            connection.rollback();
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
-        boolean successful = this.createSchemaFieldsAssociation(schemaId, fieldIds);
-    }
+        boolean successful = this.createSchemaFieldsAssociation(connection, schemaId, fieldIds);
+
+        Map<String, ?> responseMap;
+
+        if (successful) {
+            connection.commit();
+
+            responseMap = Map.of(
+                "success", false,
+                "message", "The schema was successfully created"
+            );
+        } else {
+            connection.rollback();
+
+            responseMap = Map.of(
+                "success", false,
+                "message", "The schema could not be created"
+            );
+        } //end if
+
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+    } //createHelper
 
     @PostMapping("create")
     public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
@@ -537,20 +536,42 @@ public final class SchemaController {
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        Map<String, ?> responseMap;
+        Connection connection = Utilities.getConnection();
 
-        if (successful) {
-            responseMap = Map.of(
-                "success", true,
-                "message", "The schema was successfully created"
+        if (connection == null) {
+            Map<String, Object> errorMap = Map.of(
+                "success", false,
+                "message", "The schema could not be created"
             );
-        } else {
-            responseMap = Map.of(
-                "success", true,
-                "message", "The association between the schema and fields could not be created"
-            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
-        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+        ResponseEntity<Map<String, ?>> responseEntity;
+
+        try {
+            responseEntity = this.createHelper(connection, creatorId, defaultFlag, sharedFlag, fields);
+        } catch (SQLException e) {
+            SchemaController.LOGGER.atError()
+                                   .withThrowable(e)
+                                   .log();
+
+            Map<String, Object> errorMap = Map.of(
+                "success", false,
+                "message", "The schema could not be created"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                SchemaController.LOGGER.atError()
+                                       .withThrowable(e)
+                                       .log();
+            } //end try catch
+        } //end try catch finally
+
+        return responseEntity;
     } //create
 }
