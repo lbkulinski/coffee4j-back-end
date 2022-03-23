@@ -16,7 +16,7 @@ import java.util.*;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 22, 2022
+ * @version March 23, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -107,7 +107,7 @@ public final class UserController {
         } //end if
 
         String userInsertStatement = """
-            INSERT INTO `coffee_log_users` (
+            INSERT INTO `users` (
                 `first_name`,
                 `last_name`,
                 `email`,
@@ -119,26 +119,20 @@ public final class UserController {
                 ?
             )""";
 
+        PreparedStatement preparedStatement = null;
+
         int rowsChanged;
 
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(userInsertStatement);
+            preparedStatement = connection.prepareStatement(userInsertStatement);
 
-            int firstNameIndex = 1;
+            preparedStatement.setString(1, firstName);
 
-            preparedStatement.setString(firstNameIndex, firstName);
+            preparedStatement.setString(2, lastName);
 
-            int lastNameIndex = 2;
+            preparedStatement.setString(3, email);
 
-            preparedStatement.setString(lastNameIndex, lastName);
-
-            int emailIndex = 3;
-
-            preparedStatement.setString(emailIndex, email);
-
-            int passwordHashIndex = 4;
-
-            preparedStatement.setString(passwordHashIndex, passwordHash);
+            preparedStatement.setString(4, passwordHash);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -160,6 +154,16 @@ public final class UserController {
                                      .withThrowable(e)
                                      .log();
             } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    UserController.LOGGER.atError()
+                                         .withThrowable(e)
+                                         .log();
+                } //end try catch
+            } //end if
         } //end try catch finally
 
         Map<String, ?> responseMap;
@@ -219,20 +223,20 @@ public final class UserController {
                 `last_name`,
                 `email`
             FROM
-                `coffee_log_users`
+                `users`
             WHERE
                 `id` = ?""";
 
-        ResultSet resultSet;
+        PreparedStatement preparedStatement = null;
+
+        ResultSet resultSet = null;
 
         Map<String, ?> successMap;
 
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(userQuery);
+            preparedStatement = connection.prepareStatement(userQuery);
 
-            int idIndex = 1;
-
-            preparedStatement.setString(idIndex, id);
+            preparedStatement.setString(1, id);
 
             resultSet = preparedStatement.executeQuery();
 
@@ -283,6 +287,26 @@ public final class UserController {
                                      .withThrowable(e)
                                      .log();
             } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    UserController.LOGGER.atError()
+                                         .withThrowable(e)
+                                         .log();
+                } //end try catch
+            } //end if
+
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    UserController.LOGGER.atError()
+                                         .withThrowable(e)
+                                         .log();
+                } //end try catch
+            } //end if
         } //end try catch finally
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
@@ -389,7 +413,7 @@ public final class UserController {
         } //end if
 
         String userUpdateStatementTemplate = """
-            UPDATE `coffee_log_users`
+            UPDATE `users`
             SET
             %s
             WHERE `id` = ?""";
@@ -400,10 +424,12 @@ public final class UserController {
 
         String userUpdateStatement = userUpdateStatementTemplate.formatted(setStatementsString);
 
+        PreparedStatement preparedStatement = null;
+
         int rowsChanged;
 
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(userUpdateStatement);
+            preparedStatement = connection.prepareStatement(userUpdateStatement);
 
             for (int i = 0; i < arguments.size(); i++) {
                 int argumentIndex = i + 1;
@@ -433,6 +459,16 @@ public final class UserController {
                                      .withThrowable(e)
                                      .log();
             } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    UserController.LOGGER.atError()
+                                         .withThrowable(e)
+                                         .log();
+                } //end try catch
+            } //end if
         } //end try catch finally
 
         Map<String, ?> responseMap;
@@ -485,18 +521,18 @@ public final class UserController {
         } //end if
 
         String userDeleteStatement = """
-            DELETE FROM `coffee_log_users`
+            DELETE FROM `users`
             WHERE
                 `id` = ?""";
+
+        PreparedStatement preparedStatement = null;
 
         int rowsChanged;
 
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(userDeleteStatement);
+            preparedStatement = connection.prepareStatement(userDeleteStatement);
 
-            int idIndex = 1;
-
-            preparedStatement.setString(idIndex, id);
+            preparedStatement.setString(1, id);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -518,6 +554,16 @@ public final class UserController {
                                      .withThrowable(e)
                                      .log();
             } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    UserController.LOGGER.atError()
+                                         .withThrowable(e)
+                                         .log();
+                } //end try catch
+            } //end if
         } //end try catch finally
 
         Map<String, ?> responseMap;

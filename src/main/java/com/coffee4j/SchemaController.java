@@ -21,22 +21,20 @@ public final class SchemaController {
         LOGGER = LogManager.getLogger();
     } //static
 
-    private String createSchema(String creatorId, boolean defaultFlag, boolean sharedFlag) {
-        Connection connection = Utilities.getConnection();
+    private String createSchema(Connection connection, String creatorId, boolean defaultFlag, boolean sharedFlag) {
+        Objects.requireNonNull(connection, "the specified connection is null");
 
-        if (connection == null) {
-            return null;
-        } //end if
+        Objects.requireNonNull(creatorId, "the specified creator ID is null");
 
         String updateDefaultStatement = """
-            UPDATE `coffee_log_schemas`
+            UPDATE `schemas`
             SET
                 `default` = '0'
             WHERE
                 `creator_id` = ?""";
 
         String insertSchemaStatement = """
-            INSERT INTO `coffee_log_schemas` (
+            INSERT INTO `schemas` (
                 `creator_id`,
                 `default`,
                 `shared`
@@ -46,17 +44,23 @@ public final class SchemaController {
                 ?
             )""";
 
+        PreparedStatement defaultPreparedStatement = null;
+
+        PreparedStatement schemaPreparedStatement = null;
+
+        ResultSet resultSet = null;
+
         String id;
 
         try {
-            PreparedStatement defaultPreparedStatement = connection.prepareStatement(updateDefaultStatement);
+            defaultPreparedStatement = connection.prepareStatement(updateDefaultStatement);
 
             defaultPreparedStatement.setString(1, creatorId);
 
             defaultPreparedStatement.executeUpdate();
 
-            PreparedStatement schemaPreparedStatement = connection.prepareStatement(insertSchemaStatement,
-                                                                                    Statement.RETURN_GENERATED_KEYS);
+            schemaPreparedStatement = connection.prepareStatement(insertSchemaStatement,
+                                                                  Statement.RETURN_GENERATED_KEYS);
 
             schemaPreparedStatement.setString(1, creatorId);
 
@@ -66,7 +70,7 @@ public final class SchemaController {
 
             schemaPreparedStatement.executeUpdate();
 
-            ResultSet resultSet = schemaPreparedStatement.getGeneratedKeys();
+            resultSet = schemaPreparedStatement.getGeneratedKeys();
 
             if (!resultSet.next()) {
                 return null;
@@ -82,37 +86,59 @@ public final class SchemaController {
 
             return null;
         } finally {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                SchemaController.LOGGER.atError()
-                                       .withThrowable(e)
-                                       .log();
-            } //end try catch
+            if (defaultPreparedStatement != null) {
+                try {
+                    defaultPreparedStatement.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+
+            if (schemaPreparedStatement != null) {
+                try {
+                    schemaPreparedStatement.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
         } //end try catch finally
 
         return id;
     } //createSchema
 
-    private Set<String> getValidTypeIds() {
-        Connection connection = Utilities.getConnection();
-
-        if (connection == null) {
-            return Set.of();
-        } //end if
+    private Set<String> getValidTypeIds(Connection connection) {
+        Objects.requireNonNull(connection, "the specified connection is null");
 
         String typeIdsQuery = """
             SELECT
                 `id`
             FROM
-                `coffee_log_field_types`""";
+                `field_types`""";
+
+        Statement statement = null;
+
+        ResultSet resultSet = null;
 
         Set<String> typeIds = new HashSet<>();
 
         try {
-            Statement statement = connection.createStatement();
+            statement = connection.createStatement();
 
-            ResultSet resultSet = statement.executeQuery(typeIdsQuery);
+            resultSet = statement.executeQuery(typeIdsQuery);
 
             while (resultSet.next()) {
                 String typeId = resultSet.getString("id");
@@ -126,13 +152,25 @@ public final class SchemaController {
 
             return Set.of();
         } finally {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                SchemaController.LOGGER.atError()
-                                       .withThrowable(e)
-                                       .log();
-            } //end try catch
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
         } //end try catch finally
 
         return typeIds;
@@ -184,18 +222,20 @@ public final class SchemaController {
         return Collections.unmodifiableList(fieldsCopy);
     } //getFields
 
-    private Set<String> createFields(List<Map<String, String>> fields) {
-        Connection connection = Utilities.getConnection();
+    private Set<String> createFields(Connection connection, List<Map<String, String>> fields) {
+        Objects.requireNonNull(connection, "the specified connection is null");
 
-        if (connection == null) {
-            return null;
-        } //end if
+        Objects.requireNonNull(fields, "the specified List of fields is null");
 
         List<String> valuesPlaceholders = new ArrayList<>();
 
         List<String> valuesArguments = new ArrayList<>();
 
         for (Map<String, String> field : fields) {
+            if (field == null) {
+                continue;
+            } //end if
+
             String name = field.get("name");
 
             if (name == null) {
@@ -234,21 +274,23 @@ public final class SchemaController {
                                                             .get();
 
         String insertFieldStatementTemplate = """
-            INSERT INTO `coffee_log_fields` (
+            INSERT INTO `fields` (
                 `name`,
                 `type_id`,
                 `display_name`
             ) VALUES
-            %s
-            """;
+            %s""";
 
         String insertFieldStatement = insertFieldStatementTemplate.formatted(valuesPlaceholdersString);
+
+        PreparedStatement preparedStatement = null;
+
+        ResultSet resultSet = null;
 
         Set<String> ids = new HashSet<>();
 
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(insertFieldStatement,
-                                                                              Statement.RETURN_GENERATED_KEYS);
+            preparedStatement = connection.prepareStatement(insertFieldStatement, Statement.RETURN_GENERATED_KEYS);
 
             for (int i = 0; i < valuesArguments.size(); i++) {
                 int parameterIndex = i + 1;
@@ -260,7 +302,7 @@ public final class SchemaController {
 
             preparedStatement.executeUpdate();
 
-            ResultSet resultSet = preparedStatement.getGeneratedKeys();
+            resultSet = preparedStatement.getGeneratedKeys();
 
             while (resultSet.next()) {
                 String id = resultSet.getString(1);
@@ -274,17 +316,171 @@ public final class SchemaController {
 
             return null;
         } finally {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                SchemaController.LOGGER.atError()
-                                       .withThrowable(e)
-                                       .log();
-            } //end try catch
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
         } //end try catch
 
         return ids;
     } //createFields
+
+    private boolean createSchemaFieldsAssociation(Connection connection, String schemaId, Set<String> fieldIds) {
+        Objects.requireNonNull(connection, "the specified connection is null");
+
+        Objects.requireNonNull(schemaId, "the specified schema ID is null");
+
+        Objects.requireNonNull(fieldIds, "the specified Set of field IDs is null");
+
+        List<String> valuesPlaceholders = new ArrayList<>();
+
+        List<String> valuesArguments = new ArrayList<>();
+
+        for (String fieldId : fieldIds) {
+            if (fieldId == null) {
+                continue;
+            } //end if
+
+            String valuesPlaceholder = "(? , ?)";
+
+            valuesPlaceholders.add(valuesPlaceholder);
+
+            valuesArguments.add(schemaId);
+
+            valuesArguments.add(fieldId);
+        } //end for
+
+        if (valuesPlaceholders.isEmpty()) {
+            return false;
+        } //end if
+
+        String valuesPlaceholdersString = valuesPlaceholders.stream()
+                                                            .reduce("%s,\n%s"::formatted)
+                                                            .get();
+
+        String insertAssociationStatementTemplate = """
+            INSERT INTO `schema_fields` (
+                `schema_id`,
+                `field_id`
+            )
+            VALUES
+            %s""";
+
+        String insertAssociationStatement = insertAssociationStatementTemplate.formatted(valuesPlaceholdersString);
+
+        PreparedStatement preparedStatement = null;
+
+        int rowsChanged;
+
+        try {
+            preparedStatement = connection.prepareStatement(insertAssociationStatement);
+
+            for (int i = 0; i < valuesArguments.size(); i++) {
+                int parameterIndex = i + 1;
+
+                String valueArgument = valuesArguments.get(i);
+
+                preparedStatement.setString(parameterIndex, valueArgument);
+            } //end for
+
+            rowsChanged = preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            SchemaController.LOGGER.atError()
+                                   .withThrowable(e)
+                                   .log();
+
+            return false;
+        } finally {
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+        } //end try catch finally
+
+        return rowsChanged > 0;
+    } //createSchemaFieldsAssociation
+
+    private ResponseEntity<Map<String, ?>> createHelper(String creatorId, boolean defaultFlag, boolean sharedFlag,
+                                                        List<Map<String, String>> fields) throws SQLException {
+        Objects.requireNonNull(creatorId);
+
+        Connection connection = Utilities.getConnection();
+
+        if (connection == null) {
+            Map<String, Object> errorMap = Map.of(
+                "success", false,
+                "message", "The schema could not be created"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
+        connection.setAutoCommit(false);
+
+        String schemaId = this.createSchema(connection, creatorId, defaultFlag, sharedFlag);
+
+        if (schemaId == null) {
+            Map<String, Object> errorMap = Map.of(
+                    "success", false,
+                    "message", "The schema could not be created"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
+        if (fields.isEmpty()) {
+            Map<String, ?> errorMap = Map.of(
+                    "success", false,
+                    "message", "At least one field must be specified"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        fields = this.getFields(fields);
+
+        if (fields == null) {
+            Map<String, ?> errorMap = Map.of(
+                    "success", false,
+                    "message", "The specified Set of fields is malformed"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        Set<String> fieldIds = this.createFields(fields);
+
+        if (fieldIds == null) {
+            Map<String, Object> errorMap = Map.of(
+                    "success", false,
+                    "message", "The fields could not be created"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
+        boolean successful = this.createSchemaFieldsAssociation(schemaId, fieldIds);
+    }
 
     @PostMapping("create")
     public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
@@ -327,17 +523,6 @@ public final class SchemaController {
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        String schemaId = this.createSchema(creatorId, defaultFlag, sharedFlag);
-
-        if (schemaId == null) {
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "The schema could not be created"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } //end if
-
         String fieldsKey = "fields";
 
         @SuppressWarnings("unchecked")
@@ -345,35 +530,27 @@ public final class SchemaController {
 
         if (fields == null) {
             Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "A Set of fields is required"
+                    "success", false,
+                    "message", "A Set of fields is required"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        if (fields.isEmpty()) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "At least one field must be specified"
-            );
+        Map<String, ?> responseMap;
 
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        if (successful) {
+            responseMap = Map.of(
+                "success", true,
+                "message", "The schema was successfully created"
+            );
+        } else {
+            responseMap = Map.of(
+                "success", true,
+                "message", "The association between the schema and fields could not be created"
+            );
         } //end if
 
-        fields = this.getFields(fields);
-
-        if (fields == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "The specified Set of fields is malformed"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        Set<String> fieldIds = this.createFields(fields);
-
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //create
 }
