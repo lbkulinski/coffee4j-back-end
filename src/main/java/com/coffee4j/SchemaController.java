@@ -4,10 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.sql.*;
 import java.util.*;
@@ -664,4 +661,84 @@ public final class SchemaController {
 
         return responseEntity;
     } //create
+
+    /*
+    Filters:
+        - schema_id
+        - creator_id
+        - default
+        - shared
+     */
+    @GetMapping("read")
+    public ResponseEntity<Map<String, ?>> read(@RequestParam Map<String, Object> parameters) {
+        String schemaIdKey = "schema_id";
+
+        String schemaId = Utilities.getParameter(parameters, schemaIdKey, String.class);
+
+        List<String> whereSubclauses = new ArrayList<>();
+
+        List<String> arguments = new ArrayList<>();
+
+        if (schemaId != null) {
+            String whereSubclause = "    `s`.`id` = ?";
+
+            whereSubclauses.add(whereSubclause);
+
+            arguments.add(schemaId);
+        } //end if
+
+        String creatorIdKey = "creator_id";
+
+        String creatorId = Utilities.getParameter(parameters, creatorIdKey, String.class);
+
+        if (creatorId != null) {
+            String whereSubclause = "    `s`.`creator_id` = ?";
+
+            whereSubclauses.add(whereSubclause);
+
+            arguments.add(creatorId);
+        } //end if
+
+        String defaultFlagKey = "default";
+
+        Boolean defaultFlag = Utilities.getParameter(parameters, defaultFlagKey, Boolean.class);
+
+        if (defaultFlag != null) {
+            String whereSubclause = "    `s`.`default` = ?";
+
+            whereSubclauses.add(whereSubclause);
+
+            String defaultFlagString = defaultFlag ? "1" : "0";
+
+            arguments.add(defaultFlagString);
+        } //end if
+
+        String sharedFlagKey = "shared";
+
+        Boolean sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, Boolean.class);
+
+        if (sharedFlag != null) {
+            String whereSubclause = "    `s`.`shared` = ?";
+
+            whereSubclauses.add(whereSubclause);
+
+            String sharedFlagString = sharedFlag ? "1" : "0";
+
+            arguments.add(sharedFlagString);
+        } //end if
+
+        if (whereSubclauses.isEmpty()) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "At least one filter is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String schemaQueryTemplate = """
+            """;
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    } //read
 }
