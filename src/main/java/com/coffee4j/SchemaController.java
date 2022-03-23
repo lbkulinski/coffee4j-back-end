@@ -12,9 +12,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.sql.*;
 import java.util.*;
 
+/**
+ * The REST controller used to interact with the Coffee4j schema data.
+ *
+ * @author Logan Kulinski, lbkulinski@icloud.com
+ * @version March 23, 2022
+ */
 @RestController
 @RequestMapping("api/schemas")
 public final class SchemaController {
+    /**
+     * The {@link Logger} of the {@link SchemaController} class.
+     */
     private static final Logger LOGGER;
 
     static {
@@ -449,6 +458,20 @@ public final class SchemaController {
         return rowsChanged == fieldIds.size();
     } //createAssociation
 
+    /**
+     * Attempts to create the database records needed to create a schema with the specified creator ID, default flag,
+     * shared flag, and {@link List} of field data using the specified connection.
+     *
+     * @param connection the connection to be used in the operation
+     * @param creatorId the creator ID to be used in the operation
+     * @param defaultFlag the default flag to be used in the operation
+     * @param sharedFlag the shared flag to be used in the operation
+     * @param fields the {@link List} of field data to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the create operation
+     * @throws SQLException if a SQL error occurs during the operation
+     * @throws NullPointerException if the specified connection, created ID, default flag, shared flag, or {@link List}
+     * of field data is {@code null}
+     */
     private ResponseEntity<Map<String, ?>> createHelper(Connection connection, String creatorId, boolean defaultFlag,
                                                         boolean sharedFlag,
                                                         List<Map<String, String>> fields) throws SQLException {
@@ -533,6 +556,13 @@ public final class SchemaController {
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //createHelper
 
+    /**
+     * Attempts to create a new schema using the specified parameters. A creator ID, default flag, shared flag, and
+     * {@link List} of field data is required for creation.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the create operation
+     */
     @PostMapping("create")
     public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
         String creatorIdKey = "creator_id";

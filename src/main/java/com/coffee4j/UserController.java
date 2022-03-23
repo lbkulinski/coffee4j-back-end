@@ -106,7 +106,7 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
-        String userInsertStatement = """
+        String insertUserStatement = """
             INSERT INTO `users` (
                 `first_name`,
                 `last_name`,
@@ -124,7 +124,7 @@ public final class UserController {
         int rowsChanged;
 
         try {
-            preparedStatement = connection.prepareStatement(userInsertStatement);
+            preparedStatement = connection.prepareStatement(insertUserStatement);
 
             preparedStatement.setString(1, firstName);
 
@@ -412,7 +412,7 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
-        String userUpdateStatementTemplate = """
+        String updateUserStatementTemplate = """
             UPDATE `users`
             SET
             %s
@@ -422,14 +422,14 @@ public final class UserController {
                                                   .reduce("%s,\n%s"::formatted)
                                                   .get();
 
-        String userUpdateStatement = userUpdateStatementTemplate.formatted(setStatementsString);
+        String updateUserStatement = updateUserStatementTemplate.formatted(setStatementsString);
 
         PreparedStatement preparedStatement = null;
 
         int rowsChanged;
 
         try {
-            preparedStatement = connection.prepareStatement(userUpdateStatement);
+            preparedStatement = connection.prepareStatement(updateUserStatement);
 
             for (int i = 0; i < arguments.size(); i++) {
                 int argumentIndex = i + 1;
@@ -520,7 +520,7 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
-        String userDeleteStatement = """
+        String deleteUserStatement = """
             DELETE FROM `users`
             WHERE
                 `id` = ?""";
@@ -530,7 +530,7 @@ public final class UserController {
         int rowsChanged;
 
         try {
-            preparedStatement = connection.prepareStatement(userDeleteStatement);
+            preparedStatement = connection.prepareStatement(deleteUserStatement);
 
             preparedStatement.setString(1, id);
 
