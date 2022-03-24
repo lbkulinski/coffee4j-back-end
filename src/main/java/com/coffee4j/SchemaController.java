@@ -1,6 +1,5 @@
-package com.coffee4j.controller;
+package com.coffee4j;
 
-import com.coffee4j.Utilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
