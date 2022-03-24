@@ -664,7 +664,7 @@ public final class SchemaController {
         List<String> arguments = new ArrayList<>();
 
         if (schemaId != null) {
-            String whereSubclause = "    `s`.`id` = ?";
+            String whereSubclause = "(`s`.`id` = ?)";
 
             whereSubclauses.add(whereSubclause);
 
@@ -676,7 +676,7 @@ public final class SchemaController {
         String creatorId = Utilities.getParameter(parameters, creatorIdKey, String.class);
 
         if (creatorId != null) {
-            String whereSubclause = "    `s`.`creator_id` = ?";
+            String whereSubclause = "(`s`.`creator_id` = ?)";
 
             whereSubclauses.add(whereSubclause);
 
@@ -685,28 +685,41 @@ public final class SchemaController {
 
         String defaultFlagKey = "default";
 
-        Boolean defaultFlag = Utilities.getParameter(parameters, defaultFlagKey, Boolean.class);
+        String defaultFlag = Utilities.getParameter(parameters, defaultFlagKey, String.class);
+
+        if ((creatorId == null) && (defaultFlag != null)) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "A creator ID is required to use the default flag"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
 
         if (defaultFlag != null) {
-            String whereSubclause = "    `s`.`default` = ?";
+            String whereSubclause = "(`s`.`default` = ?)";
 
             whereSubclauses.add(whereSubclause);
 
-            String defaultFlagString = defaultFlag ? "1" : "0";
+            defaultFlag = defaultFlag.toLowerCase();
+
+            String defaultFlagString = Objects.equals(defaultFlag, "true") ? "1" : "0";
 
             arguments.add(defaultFlagString);
         } //end if
 
         String sharedFlagKey = "shared";
 
-        Boolean sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, Boolean.class);
+        String sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, String.class);
 
         if (sharedFlag != null) {
-            String whereSubclause = "    `s`.`shared` = ?";
+            String whereSubclause = "(`s`.`shared` = ?)";
 
             whereSubclauses.add(whereSubclause);
 
-            String sharedFlagString = sharedFlag ? "1" : "0";
+            sharedFlag = sharedFlag.toLowerCase();
+
+            String sharedFlagString = Objects.equals(sharedFlag, "true") ? "1" : "0";
 
             arguments.add(sharedFlagString);
         } //end if
@@ -720,8 +733,100 @@ public final class SchemaController {
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
+        Connection connection = Utilities.getConnection();
+
+        if (connection == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The schema's data could not be retrieved"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
         String schemaQueryTemplate = """
-            """;
+            SELECT
+                `s`.`id` AS `schema_id`,
+                `s`.`default`,
+                `s`.`shared`,
+                `f`.`id` AS `field_id`,
+                `f`.`name` AS `field_name`,
+                `f`.`display_name` AS `field_display_name`,
+                `ft`.`id` AS `type_id`,
+                `ft`.`name` AS `type_name`
+            FROM
+                `schemas` `s`
+                    INNER JOIN
+                `schema_fields` `sf` ON `sf`.`schema_id` = `s`.`id`
+                    INNER JOIN
+                `fields` `f` ON `f`.`id` = `sf`.`field_id`
+                    INNER JOIN
+                `field_types` `ft` ON `ft`.`id` = `f`.`type_id`
+            WHERE
+            %s""";
+
+        String whereSubclausesString = whereSubclauses.stream()
+                                                      .reduce("%s\nAND %s"::formatted)
+                                                      .get();
+
+        String schemaQuery = schemaQueryTemplate.formatted(whereSubclausesString);
+
+        PreparedStatement preparedStatement = null;
+
+        ResultSet resultSet = null;
+
+        try {
+            preparedStatement = connection.prepareStatement(schemaQuery);
+
+            for (int i = 0; i < arguments.size(); i++) {
+                int parameterIndex = i + 1;
+
+                String argument = arguments.get(i);
+
+                preparedStatement.setString(parameterIndex, argument);
+            } //end for
+
+            resultSet = preparedStatement.executeQuery();
+        } catch (SQLException e) {
+            SchemaController.LOGGER.atError()
+                                   .withThrowable(e)
+                                   .log();
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The schema's data could not be retrieved"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                SchemaController.LOGGER.atError()
+                                       .withThrowable(e)
+                                       .log();
+            } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+        } //end try catch
 
         return new ResponseEntity<>(HttpStatus.OK);
     } //read
