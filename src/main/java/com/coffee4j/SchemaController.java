@@ -646,12 +646,13 @@ public final class SchemaController {
         return responseEntity;
     } //create
 
-    /*
-    Filters:
-        - schema_id
-        - creator_id
-        - default
-        - shared
+    /**
+     * Attempts to read existing schema data using the specified parameters. Valid filters are a schema ID, creator ID,
+     * default flag, and shared flag. At least one filter is required. The default flag filter can only be used if a
+     * creator ID is specified.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping("read")
     public ResponseEntity<Map<String, ?>> read(@RequestParam Map<String, Object> parameters) {
@@ -804,7 +805,7 @@ public final class SchemaController {
 
                     boolean rowShared = rowSharedInteger == 1;
 
-                    List<Map<String, String>> fields = new ArrayList<>();
+                    List<Map<String, ?>> fields = new ArrayList<>();
 
                     schemaData = Map.of(
                         "schema_id", rowSchemaId,
@@ -817,7 +818,29 @@ public final class SchemaController {
                 } //end if
 
                 @SuppressWarnings("unchecked")
-                List<Map<String, String>> fields = (List<Map<String, String>>) schemaData.get("fields");
+                List<Map<String, ?>> fields = (List<Map<String, ?>>) schemaData.get("fields");
+
+                String rowFieldId = resultSet.getString("field_id");
+
+                String rowFieldName = resultSet.getString("field_name");
+
+                String rowFieldDisplayName = resultSet.getString("field_display_name");
+
+                String rowTypeId = resultSet.getString("type_id");
+
+                String rowTypeName = resultSet.getString("type_name");
+
+                Map<String, ?> field = Map.of(
+                    "id", rowFieldId,
+                    "name", rowFieldName,
+                    "display_name", rowFieldDisplayName,
+                    "type", Map.of(
+                        "id", rowTypeId,
+                        "name", rowTypeName
+                    )
+                );
+
+                fields.add(field);
             } //end while
         } catch (SQLException e) {
             SchemaController.LOGGER.atError()
@@ -860,6 +883,15 @@ public final class SchemaController {
             } //end if
         } //end try catch
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        Collection<Map<String, ?>> schemas = schemaIdToSchemaData.values();
+
+        schemas = Collections.unmodifiableCollection(schemas);
+
+        Map<String, ?> successMap = Map.of(
+            "success", true,
+            "schemas", schemas
+        );
+
+        return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
 }
