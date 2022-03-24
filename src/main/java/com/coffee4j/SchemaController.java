@@ -888,4 +888,17 @@ public final class SchemaController {
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
+
+    /*
+    Update
+        - Schema
+            * default
+            * shared
+        - Fields
+            * name
+            * type_id
+            * display_name
+        - Schema/Fields
+            * Add/Remove
+     */
 }
