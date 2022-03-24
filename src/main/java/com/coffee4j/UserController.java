@@ -106,13 +106,18 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
+        String id = UUID.randomUUID()
+                        .toString();
+
         String insertUserStatement = """
             INSERT INTO `users` (
+                `id`,
                 `first_name`,
                 `last_name`,
                 `email`,
                 `password_hash`
             ) VALUES (
+                ?,
                 ?,
                 ?,
                 ?,
@@ -126,13 +131,15 @@ public final class UserController {
         try {
             preparedStatement = connection.prepareStatement(insertUserStatement);
 
-            preparedStatement.setString(1, firstName);
+            preparedStatement.setString(1, id);
 
-            preparedStatement.setString(2, lastName);
+            preparedStatement.setString(2, firstName);
 
-            preparedStatement.setString(3, email);
+            preparedStatement.setString(3, lastName);
 
-            preparedStatement.setString(4, passwordHash);
+            preparedStatement.setString(4, email);
+
+            preparedStatement.setString(5, passwordHash);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {

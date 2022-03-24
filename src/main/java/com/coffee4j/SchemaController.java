@@ -44,6 +44,9 @@ public final class SchemaController {
 
         Objects.requireNonNull(creatorId, "the specified creator ID is null");
 
+        String id = UUID.randomUUID()
+                        .toString();
+
         String updateDefaultStatement = """
             UPDATE `schemas`
             SET
@@ -53,10 +56,12 @@ public final class SchemaController {
 
         String insertSchemaStatement = """
             INSERT INTO `schemas` (
+                `id`,
                 `creator_id`,
                 `default`,
                 `shared`
             ) VALUES (
+                ?,
                 ?,
                 ?,
                 ?
@@ -66,9 +71,7 @@ public final class SchemaController {
 
         PreparedStatement schemaPreparedStatement = null;
 
-        ResultSet resultSet = null;
-
-        String id;
+        int rowsChanged;
 
         try {
             defaultPreparedStatement = connection.prepareStatement(updateDefaultStatement);
@@ -77,26 +80,17 @@ public final class SchemaController {
 
             defaultPreparedStatement.executeUpdate();
 
-            schemaPreparedStatement = connection.prepareStatement(insertSchemaStatement,
-                                                                  Statement.RETURN_GENERATED_KEYS);
+            schemaPreparedStatement = connection.prepareStatement(insertSchemaStatement);
 
-            schemaPreparedStatement.setString(1, creatorId);
+            schemaPreparedStatement.setString(1, id);
 
-            schemaPreparedStatement.setBoolean(2, defaultFlag);
+            schemaPreparedStatement.setString(2, creatorId);
 
-            schemaPreparedStatement.setBoolean(3, sharedFlag);
+            schemaPreparedStatement.setBoolean(3, defaultFlag);
 
-            schemaPreparedStatement.executeUpdate();
+            schemaPreparedStatement.setBoolean(4, sharedFlag);
 
-            resultSet = schemaPreparedStatement.getGeneratedKeys();
-
-            if (!resultSet.next()) {
-                return null;
-            } //end if
-
-            int idIndex = 1;
-
-            id = resultSet.getString(idIndex);
+            rowsChanged = schemaPreparedStatement.executeUpdate();
         } finally {
             if (defaultPreparedStatement != null) {
                 try {
@@ -117,17 +111,13 @@ public final class SchemaController {
                                            .log();
                 } //end try catch
             } //end if
-
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException e) {
-                    SchemaController.LOGGER.atError()
-                                           .withThrowable(e)
-                                           .log();
-                } //end try catch
-            } //end if
         } //end try catch finally
+
+        int expectedChange = 1;
+
+        if (rowsChanged != expectedChange) {
+            return null;
+        } //end if
 
         return id;
     } //createSchema
@@ -153,7 +143,7 @@ public final class SchemaController {
 
         ResultSet resultSet = null;
 
-        Set<String> typeIds = new HashSet<>();
+        Set<String> ids = new HashSet<>();
 
         try {
             statement = connection.createStatement();
@@ -161,9 +151,9 @@ public final class SchemaController {
             resultSet = statement.executeQuery(typeIdsQuery);
 
             while (resultSet.next()) {
-                String typeId = resultSet.getString("id");
+                String id = resultSet.getString("id");
 
-                typeIds.add(typeId);
+                ids.add(id);
             } //end while
         } finally {
             if (statement != null) {
@@ -187,7 +177,7 @@ public final class SchemaController {
             } //end if
         } //end try catch finally
 
-        return typeIds;
+        return Collections.unmodifiableSet(ids);
     } //getValidTypeIds
 
     /**
@@ -266,6 +256,8 @@ public final class SchemaController {
 
         List<String> valuesArguments = new ArrayList<>();
 
+        Set<String> ids = new HashSet<>();
+
         for (Map<String, String> field : fields) {
             if (field == null) {
                 return null;
@@ -289,9 +281,16 @@ public final class SchemaController {
                 return null;
             } //end if
 
-            String valuesPlaceholder = "(? , ? , ?)";
+            String id = UUID.randomUUID()
+                            .toString();
+
+            ids.add(id);
+
+            String valuesPlaceholder = "(? , ? , ? , ?)";
 
             valuesPlaceholders.add(valuesPlaceholder);
+
+            valuesArguments.add(id);
 
             valuesArguments.add(name);
 
@@ -310,6 +309,7 @@ public final class SchemaController {
 
         String insertFieldStatementTemplate = """
             INSERT INTO `fields` (
+                `id`,
                 `name`,
                 `type_id`,
                 `display_name`
@@ -320,9 +320,7 @@ public final class SchemaController {
 
         PreparedStatement preparedStatement = null;
 
-        ResultSet resultSet = null;
-
-        Set<String> ids = new HashSet<>();
+        int rowsChanged;
 
         try {
             preparedStatement = connection.prepareStatement(insertFieldStatement, Statement.RETURN_GENERATED_KEYS);
@@ -335,15 +333,7 @@ public final class SchemaController {
                 preparedStatement.setString(parameterIndex, valuesArgument);
             } //end for
 
-            preparedStatement.executeUpdate();
-
-            resultSet = preparedStatement.getGeneratedKeys();
-
-            while (resultSet.next()) {
-                String id = resultSet.getString(1);
-
-                ids.add(id);
-            } //end while
+            rowsChanged = preparedStatement.executeUpdate();
         } finally {
             if (preparedStatement != null) {
                 try {
@@ -354,17 +344,11 @@ public final class SchemaController {
                                            .log();
                 } //end try catch
             } //end if
-
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException e) {
-                    SchemaController.LOGGER.atError()
-                                           .withThrowable(e)
-                                           .log();
-                } //end try catch
-            } //end if
         } //end try catch
+
+        if (rowsChanged != ids.size()) {
+            return null;
+        } //end if
 
         return ids;
     } //createFields
