@@ -775,6 +775,8 @@ public final class SchemaController {
 
         ResultSet resultSet = null;
 
+        Map<String, Map<String, ?>> schemaIdToSchemaData = new HashMap<>();
+
         try {
             preparedStatement = connection.prepareStatement(schemaQuery);
 
@@ -787,6 +789,36 @@ public final class SchemaController {
             } //end for
 
             resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String rowSchemaId = resultSet.getString("schema_id");
+
+                Map<String, ?> schemaData = schemaIdToSchemaData.get(rowSchemaId);
+
+                if (schemaData == null) {
+                    int rowDefaultInteger = resultSet.getInt("default");
+
+                    boolean rowDefault = rowDefaultInteger == 1;
+
+                    int rowSharedInteger = resultSet.getInt("shared");
+
+                    boolean rowShared = rowSharedInteger == 1;
+
+                    List<Map<String, String>> fields = new ArrayList<>();
+
+                    schemaData = Map.of(
+                        "schema_id", rowSchemaId,
+                        "default", rowDefault,
+                        "shared", rowShared,
+                        "fields", fields
+                    );
+
+                    schemaIdToSchemaData.put(rowSchemaId, schemaData);
+                } //end if
+
+                @SuppressWarnings("unchecked")
+                List<Map<String, String>> fields = (List<Map<String, String>>) schemaData.get("fields");
+            } //end while
         } catch (SQLException e) {
             SchemaController.LOGGER.atError()
                                    .withThrowable(e)
