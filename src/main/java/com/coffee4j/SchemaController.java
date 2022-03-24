@@ -13,7 +13,7 @@ import java.util.*;
  * The REST controller used to interact with the Coffee4j schema data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 23, 2022
+ * @version March 24, 2022
  */
 @RestController
 @RequestMapping("api/schemas")
@@ -714,15 +714,9 @@ public final class SchemaController {
         String sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, String.class);
 
         if (sharedFlag != null) {
-            String whereSubclause = "(`s`.`shared` = ?)";
+            String whereSubclause = "(`s`.`shared` = '1')";
 
             whereSubclauses.add(whereSubclause);
-
-            sharedFlag = sharedFlag.toLowerCase();
-
-            String sharedFlagString = Objects.equals(sharedFlag, "true") ? "1" : "0";
-
-            arguments.add(sharedFlagString);
         } //end if
 
         if (whereSubclauses.isEmpty()) {
