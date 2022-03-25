@@ -13,7 +13,7 @@ import java.util.*;
  * The REST controller used to interact with the Coffee4j schema data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 23, 2022
+ * @version March 24, 2022
  */
 @RestController
 @RequestMapping("api/schemas")
@@ -646,12 +646,13 @@ public final class SchemaController {
         return responseEntity;
     } //create
 
-    /*
-    Filters:
-        - schema_id
-        - creator_id
-        - default
-        - shared
+    /**
+     * Attempts to read existing schema data using the specified parameters. Valid filters are a schema ID, creator ID,
+     * default flag, and shared flag. At least one filter is required. The default flag filter can only be used if a
+     * creator ID is specified.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping("read")
     public ResponseEntity<Map<String, ?>> read(@RequestParam Map<String, Object> parameters) {
@@ -664,7 +665,7 @@ public final class SchemaController {
         List<String> arguments = new ArrayList<>();
 
         if (schemaId != null) {
-            String whereSubclause = "    `s`.`id` = ?";
+            String whereSubclause = "(`s`.`id` = ?)";
 
             whereSubclauses.add(whereSubclause);
 
@@ -676,7 +677,7 @@ public final class SchemaController {
         String creatorId = Utilities.getParameter(parameters, creatorIdKey, String.class);
 
         if (creatorId != null) {
-            String whereSubclause = "    `s`.`creator_id` = ?";
+            String whereSubclause = "(`s`.`creator_id` = ?)";
 
             whereSubclauses.add(whereSubclause);
 
@@ -685,30 +686,37 @@ public final class SchemaController {
 
         String defaultFlagKey = "default";
 
-        Boolean defaultFlag = Utilities.getParameter(parameters, defaultFlagKey, Boolean.class);
+        String defaultFlag = Utilities.getParameter(parameters, defaultFlagKey, String.class);
+
+        if ((creatorId == null) && (defaultFlag != null)) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "A creator ID is required to use the default flag"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
 
         if (defaultFlag != null) {
-            String whereSubclause = "    `s`.`default` = ?";
+            String whereSubclause = "(`s`.`default` = ?)";
 
             whereSubclauses.add(whereSubclause);
 
-            String defaultFlagString = defaultFlag ? "1" : "0";
+            defaultFlag = defaultFlag.toLowerCase();
+
+            String defaultFlagString = Objects.equals(defaultFlag, "true") ? "1" : "0";
 
             arguments.add(defaultFlagString);
         } //end if
 
         String sharedFlagKey = "shared";
 
-        Boolean sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, Boolean.class);
+        String sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, String.class);
 
         if (sharedFlag != null) {
-            String whereSubclause = "    `s`.`shared` = ?";
+            String whereSubclause = "(`s`.`shared` = '1')";
 
             whereSubclauses.add(whereSubclause);
-
-            String sharedFlagString = sharedFlag ? "1" : "0";
-
-            arguments.add(sharedFlagString);
         } //end if
 
         if (whereSubclauses.isEmpty()) {
@@ -720,9 +728,177 @@ public final class SchemaController {
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        String schemaQueryTemplate = """
-            """;
+        Connection connection = Utilities.getConnection();
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        if (connection == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The schema's data could not be retrieved"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
+        String schemaQueryTemplate = """
+            SELECT
+                `s`.`id` AS `schema_id`,
+                `s`.`default`,
+                `s`.`shared`,
+                `f`.`id` AS `field_id`,
+                `f`.`name` AS `field_name`,
+                `f`.`display_name` AS `field_display_name`,
+                `ft`.`id` AS `type_id`,
+                `ft`.`name` AS `type_name`
+            FROM
+                `schemas` `s`
+                    INNER JOIN
+                `schema_fields` `sf` ON `sf`.`schema_id` = `s`.`id`
+                    INNER JOIN
+                `fields` `f` ON `f`.`id` = `sf`.`field_id`
+                    INNER JOIN
+                `field_types` `ft` ON `ft`.`id` = `f`.`type_id`
+            WHERE
+            %s""";
+
+        String whereSubclausesString = whereSubclauses.stream()
+                                                      .reduce("%s\nAND %s"::formatted)
+                                                      .get();
+
+        String schemaQuery = schemaQueryTemplate.formatted(whereSubclausesString);
+
+        PreparedStatement preparedStatement = null;
+
+        ResultSet resultSet = null;
+
+        Map<String, Map<String, ?>> schemaIdToSchemaData = new HashMap<>();
+
+        try {
+            preparedStatement = connection.prepareStatement(schemaQuery);
+
+            for (int i = 0; i < arguments.size(); i++) {
+                int parameterIndex = i + 1;
+
+                String argument = arguments.get(i);
+
+                preparedStatement.setString(parameterIndex, argument);
+            } //end for
+
+            resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String rowSchemaId = resultSet.getString("schema_id");
+
+                Map<String, ?> schemaData = schemaIdToSchemaData.get(rowSchemaId);
+
+                if (schemaData == null) {
+                    int rowDefaultInteger = resultSet.getInt("default");
+
+                    boolean rowDefault = rowDefaultInteger == 1;
+
+                    int rowSharedInteger = resultSet.getInt("shared");
+
+                    boolean rowShared = rowSharedInteger == 1;
+
+                    List<Map<String, ?>> fields = new ArrayList<>();
+
+                    schemaData = Map.of(
+                        "schema_id", rowSchemaId,
+                        "default", rowDefault,
+                        "shared", rowShared,
+                        "fields", fields
+                    );
+
+                    schemaIdToSchemaData.put(rowSchemaId, schemaData);
+                } //end if
+
+                @SuppressWarnings("unchecked")
+                List<Map<String, ?>> fields = (List<Map<String, ?>>) schemaData.get("fields");
+
+                String rowFieldId = resultSet.getString("field_id");
+
+                String rowFieldName = resultSet.getString("field_name");
+
+                String rowFieldDisplayName = resultSet.getString("field_display_name");
+
+                String rowTypeId = resultSet.getString("type_id");
+
+                String rowTypeName = resultSet.getString("type_name");
+
+                Map<String, ?> field = Map.of(
+                    "id", rowFieldId,
+                    "name", rowFieldName,
+                    "display_name", rowFieldDisplayName,
+                    "type", Map.of(
+                        "id", rowTypeId,
+                        "name", rowTypeName
+                    )
+                );
+
+                fields.add(field);
+            } //end while
+        } catch (SQLException e) {
+            SchemaController.LOGGER.atError()
+                                   .withThrowable(e)
+                                   .log();
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The schema's data could not be retrieved"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                SchemaController.LOGGER.atError()
+                                       .withThrowable(e)
+                                       .log();
+            } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+        } //end try catch
+
+        Collection<Map<String, ?>> schemas = schemaIdToSchemaData.values();
+
+        schemas = Collections.unmodifiableCollection(schemas);
+
+        Map<String, ?> successMap = Map.of(
+            "success", true,
+            "schemas", schemas
+        );
+
+        return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
+
+    /*
+    Update
+        - Schema
+            * default
+            * shared
+        - Fields
+            * name
+            * type_id
+            * display_name
+        - Schema/Fields
+            * Add/Remove
+     */
 }
