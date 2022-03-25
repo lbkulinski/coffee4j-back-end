@@ -51,7 +51,7 @@ public final class SchemaController {
 
         String defaultFlagKey = "default";
 
-        String defaultFlag = Utilities.getParameter(parameters, defaultFlagKey, String.class);
+        Boolean defaultFlag = Utilities.getParameter(parameters, defaultFlagKey, Boolean.class);
 
         if (defaultFlag == null) {
             Map<String, ?> errorMap = Map.of(
@@ -64,7 +64,7 @@ public final class SchemaController {
 
         String sharedFlagKey = "shared";
 
-        String sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, String.class);
+        Boolean sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, Boolean.class);
 
         if (sharedFlag == null) {
             Map<String, ?> errorMap = Map.of(
@@ -113,9 +113,9 @@ public final class SchemaController {
 
             preparedStatement.setString(2, creatorId);
 
-            preparedStatement.setString(3, defaultFlag);
+            preparedStatement.setBoolean(3, defaultFlag);
 
-            preparedStatement.setString(4, sharedFlag);
+            preparedStatement.setBoolean(4, sharedFlag);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {
