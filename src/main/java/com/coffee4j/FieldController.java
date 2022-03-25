@@ -623,4 +623,99 @@ public class FieldController {
 
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //update
+
+    /**
+     * Attempts to delete an existing field using the specified parameters. An ID is required for deletion.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
+    @PostMapping("delete")
+    public ResponseEntity<Map<String, ?>> delete(@RequestBody Map<String, Object> parameters) {
+        String idKey = "id";
+
+        String id = Utilities.getParameter(parameters, idKey, String.class);
+
+        if (id == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "An ID is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        Connection connection = Utilities.getConnection();
+
+        if (connection == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The field could not be deleted"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
+        String deleteFieldStatement = """
+            DELETE FROM `fields`
+            WHERE
+                `id` = ?""";
+
+        PreparedStatement preparedStatement = null;
+
+        int rowsChanged;
+
+        try {
+            preparedStatement = connection.prepareStatement(deleteFieldStatement);
+
+            preparedStatement.setString(1, id);
+
+            rowsChanged = preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            FieldController.LOGGER.atError()
+                                  .withThrowable(e)
+                                  .log();
+
+            Map<String, Object> errorMap = Map.of(
+                "success", false,
+                "message", "The field could not be deleted"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                FieldController.LOGGER.atError()
+                                      .withThrowable(e)
+                                      .log();
+            } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    FieldController.LOGGER.atError()
+                                          .withThrowable(e)
+                                          .log();
+                } //end try catch
+            } //end if
+        } //end try catch finally
+
+        Map<String, ?> responseMap;
+
+        if (rowsChanged == 0) {
+            responseMap = Map.of(
+                "success", false,
+                "message", "A field with the specified ID could not be found"
+            );
+        } else {
+            responseMap = Map.of(
+                "success", true,
+                "message", "The field was successfully deleted"
+            );
+        } //end if
+
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+    }
 }
