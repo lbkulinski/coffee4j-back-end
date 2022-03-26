@@ -16,7 +16,7 @@ import java.util.*;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 23, 2022
+ * @version March 25, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -256,19 +256,19 @@ public final class UserController {
                 return new ResponseEntity<>(errorMap, HttpStatus.OK);
             } //end if
 
-            int userId = resultSet.getInt("id");
+            String rowId = resultSet.getString("id");
 
-            String firstName = resultSet.getString("first_name");
+            String rowFirstName = resultSet.getString("first_name");
 
-            String lastName = resultSet.getString("last_name");
+            String rowLastName = resultSet.getString("last_name");
 
-            String email = resultSet.getString("email");
+            String rowEmail = resultSet.getString("email");
 
             dataMap = Map.of(
-                "id", userId,
-                "first_name", firstName,
-                "last_name", lastName,
-                "email", email
+                "id", rowId,
+                "first_name", rowFirstName,
+                "last_name", rowLastName,
+                "email", rowEmail
             );
         } catch (SQLException e) {
             UserController.LOGGER.atError()
