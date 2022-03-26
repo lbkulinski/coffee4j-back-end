@@ -37,7 +37,7 @@ public final class UserController {
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the create operation
      */
-    @PostMapping("create")
+    @PostMapping
     public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
         String firstNameKey = "first_name";
 
@@ -197,7 +197,7 @@ public final class UserController {
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
-    @GetMapping("read")
+    @GetMapping
     public ResponseEntity<Map<String, ?>> read(@RequestParam Map<String, Object> parameters) {
         String idKey = "id";
 
@@ -326,7 +326,7 @@ public final class UserController {
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
-    @PostMapping("update")
+    @PutMapping
     public ResponseEntity<Map<String, ?>> update(@RequestBody Map<String, Object> parameters) {
         String idKey = "id";
 
@@ -501,7 +501,7 @@ public final class UserController {
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
      */
-    @PostMapping("delete")
+    @DeleteMapping
     public ResponseEntity<Map<String, ?>> delete(@RequestBody Map<String, Object> parameters) {
         String idKey = "id";
 
