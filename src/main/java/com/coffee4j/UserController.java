@@ -6,10 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+
+import java.sql.*;
 import java.util.*;
 
 /**
@@ -22,57 +20,46 @@ import java.util.*;
 @RequestMapping("api/users")
 public final class UserController {
     /**
+     * The maximum username length of the {@link UserController} class.
+     */
+    private static final int MAX_USERNAME_LENGTH;
+
+    /**
      * The {@link Logger} of the {@link UserController} class.
      */
     private static final Logger LOGGER;
 
     static {
+        MAX_USERNAME_LENGTH = 15;
+
         LOGGER = LogManager.getLogger();
     } //static
 
     /**
-     * Attempts to create a new user using the specified parameters. A first name, last name, email, and password are
-     * required for creation.
+     * Attempts to create a new user using the specified parameters. A username and password are required for creation.
      *
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the create operation
      */
     @PostMapping
     public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
-        String firstNameKey = "first_name";
+        String usernameKey = "username";
 
-        String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
+        String username = Utilities.getParameter(parameters, usernameKey, String.class);
 
-        if (firstName == null) {
+        if (username == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "A first name is required"
+                "message", "A username is required"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
+        } else if (username.length() > MAX_USERNAME_LENGTH) {
+            String message = "A username cannot exceed %d characters".formatted(MAX_USERNAME_LENGTH);
 
-        String lastNameKey = "last_name";
-
-        String lastName = Utilities.getParameter(parameters, lastNameKey, String.class);
-
-        if (lastName == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "A last name is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        String emailKey = "email";
-
-        String email = Utilities.getParameter(parameters, emailKey, String.class);
-
-        if (email == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "An email is required"
+                "message", message
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
@@ -106,20 +93,11 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
-        String id = UUID.randomUUID()
-                        .toString();
-
         String insertUserStatement = """
             INSERT INTO `users` (
-                `id`,
-                `first_name`,
-                `last_name`,
-                `email`,
+                `username`,
                 `password_hash`
             ) VALUES (
-                ?,
-                ?,
-                ?,
                 ?,
                 ?
             )""";
@@ -131,15 +109,9 @@ public final class UserController {
         try {
             preparedStatement = connection.prepareStatement(insertUserStatement);
 
-            preparedStatement.setString(1, id);
+            preparedStatement.setString(1, username);
 
-            preparedStatement.setString(2, firstName);
-
-            preparedStatement.setString(3, lastName);
-
-            preparedStatement.setString(4, email);
-
-            preparedStatement.setString(5, passwordHash);
+            preparedStatement.setString(2, passwordHash);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -192,7 +164,7 @@ public final class UserController {
 
     /**
      * Attempts to read existing user data using the specified parameters. An ID is required for reading. Assuming a
-     * user with the specified ID exists, their first name, last name, and email are returned.
+     * user with the specified ID exists, their id and username are returned.
      *
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
@@ -226,9 +198,7 @@ public final class UserController {
         String userQuery = """
             SELECT
                 `id`,
-                `first_name`,
-                `last_name`,
-                `email`
+                `username`
             FROM
                 `users`
             WHERE
@@ -238,7 +208,7 @@ public final class UserController {
 
         ResultSet resultSet = null;
 
-        Map<String, ?> dataMap;
+        Map<String, ?> user;
 
         try {
             preparedStatement = connection.prepareStatement(userQuery);
@@ -258,17 +228,11 @@ public final class UserController {
 
             String rowId = resultSet.getString("id");
 
-            String rowFirstName = resultSet.getString("first_name");
+            String rowUsername = resultSet.getString("username");
 
-            String rowLastName = resultSet.getString("last_name");
-
-            String rowEmail = resultSet.getString("email");
-
-            dataMap = Map.of(
+            user = Map.of(
                 "id", rowId,
-                "first_name", rowFirstName,
-                "last_name", rowLastName,
-                "email", rowEmail
+                "username", rowUsername
             );
         } catch (SQLException e) {
             UserController.LOGGER.atError()
@@ -313,7 +277,7 @@ public final class UserController {
 
         Map<String, ?> successMap = Map.of(
             "success", true,
-            "data", dataMap
+            "user", user
         );
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
@@ -321,7 +285,7 @@ public final class UserController {
 
     /**
      * Attempts to update existing user data using the specified parameters. An ID is required for updating. A user's
-     * first name, last name, email, and password can be updated. At least one is required.
+     * username and password can be updated. At least one is required.
      *
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the update operation
@@ -341,44 +305,29 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
-        String firstNameKey = "first_name";
+        String usernameKey = "username";
 
-        String firstName = Utilities.getParameter(parameters, firstNameKey, String.class);
+        String username = Utilities.getParameter(parameters, usernameKey, String.class);
 
         Set<String> setStatements = new HashSet<>();
 
         List<String> arguments = new ArrayList<>();
 
-        if (firstName != null) {
-            String setStatement = "    `first_name` = ?";
+        if ((username != null) && (username.length() > MAX_USERNAME_LENGTH)) {
+            String message = "A username cannot exceed %d characters".formatted(MAX_USERNAME_LENGTH);
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", message
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } else if (username != null) {
+            String setStatement = "    `username` = ?";
 
             setStatements.add(setStatement);
 
-            arguments.add(firstName);
-        } //end if
-
-        String lastNameKey = "last_name";
-
-        String lastName = Utilities.getParameter(parameters, lastNameKey, String.class);
-
-        if (lastName != null) {
-            String setStatement = "    `last_name` = ?";
-
-            setStatements.add(setStatement);
-
-            arguments.add(lastName);
-        } //end if
-
-        String emailKey = "email";
-
-        String email = Utilities.getParameter(parameters, emailKey, String.class);
-
-        if (email != null) {
-            String setStatement = "    `email` = ?";
-
-            setStatements.add(setStatement);
-
-            arguments.add(email);
+            arguments.add(username);
         } //end if
 
         String passwordKey = "password";
