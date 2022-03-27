@@ -1,5 +1,6 @@
-package com.coffee4j;
+package com.coffee4j.controller;
 
+import com.coffee4j.Utilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -14,7 +15,7 @@ import java.util.*;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 25, 2022
+ * @version March 26, 2022
  */
 @RestController
 @RequestMapping("api/users")
