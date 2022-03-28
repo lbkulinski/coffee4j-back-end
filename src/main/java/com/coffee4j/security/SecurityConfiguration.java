@@ -29,6 +29,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
         http.userDetailsService(service)
             .authorizeRequests()
+            .antMatchers("/create*")
+            .permitAll()
             .anyRequest()
             .authenticated()
             .and()
