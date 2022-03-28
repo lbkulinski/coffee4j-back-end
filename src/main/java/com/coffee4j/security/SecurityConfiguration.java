@@ -31,7 +31,9 @@ public class SecurityConfiguration {
             .anyRequest()
             .authenticated()
             .and()
-            .formLogin();
+            .formLogin()
+            .and()
+            .logout();
 
         return http.build();
     } //filterChain
