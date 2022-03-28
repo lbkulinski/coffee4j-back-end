@@ -4,6 +4,9 @@ import com.coffee4j.Utilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
@@ -164,26 +167,17 @@ public final class UserController {
     } //create
 
     /**
-     * Attempts to read existing user data using the specified parameters. An ID is required for reading. Assuming a
-     * user with the specified ID exists, their id and username are returned.
+     * Attempts to read existing user data for the current logged-in user. A user must be logged in to read their data.
+     * Assuming a logged-in user the given username exists, their ID and username are returned.
      *
-     * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
-    public ResponseEntity<Map<String, ?>> read(@RequestParam Map<String, Object> parameters) {
-        String idKey = "id";
+    public ResponseEntity<Map<String, ?>> read() {
+        Authentication authentication = SecurityContextHolder.getContext()
+                                                             .getAuthentication();
 
-        String id = Utilities.getParameter(parameters, idKey, String.class);
-
-        if (id == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "An ID is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
+        String username = authentication.getName();
 
         Connection connection = Utilities.getConnection();
 
@@ -203,7 +197,7 @@ public final class UserController {
             FROM
                 `users`
             WHERE
-                `id` = ?""";
+                `username` = ?""";
 
         PreparedStatement preparedStatement = null;
 
@@ -214,14 +208,16 @@ public final class UserController {
         try {
             preparedStatement = connection.prepareStatement(userQuery);
 
-            preparedStatement.setString(1, id);
+            preparedStatement.setString(1, username);
 
             resultSet = preparedStatement.executeQuery();
 
             if (!resultSet.next()) {
+                String message = "A user with the username \"%s\" could not be found".formatted(username);
+
                 Map<String, ?> errorMap = Map.of(
                     "success", false,
-                    "message", "A user with the specified ID could not be found"
+                    "message", message
                 );
 
                 return new ResponseEntity<>(errorMap, HttpStatus.OK);

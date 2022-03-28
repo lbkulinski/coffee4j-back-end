@@ -70,8 +70,6 @@ public final class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Objects.requireNonNull(username, "the specified username is null");
 
-        System.out.println(username);
-
         Connection connection = Utilities.getConnection();
 
         if (connection == null) {
