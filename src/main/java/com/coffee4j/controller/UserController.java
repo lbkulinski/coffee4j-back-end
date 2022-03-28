@@ -4,8 +4,6 @@ import com.coffee4j.Utilities;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +15,7 @@ import java.util.*;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 28, 2022
+ * @version March 26, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -173,10 +171,7 @@ public final class UserController {
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
-    public ResponseEntity<Map<String, ?>> read(@RequestParam Map<String, Object> parameters,
-                                               @AuthenticationPrincipal String username) {
-        System.out.println(username);
-
+    public ResponseEntity<Map<String, ?>> read(@RequestParam Map<String, Object> parameters) {
         String idKey = "id";
 
         String id = Utilities.getParameter(parameters, idKey, String.class);
