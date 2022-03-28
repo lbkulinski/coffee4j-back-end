@@ -20,14 +20,14 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-            .antMatchers(HttpMethod.POST, "/api/users")
-            .permitAll();
-
         UserDetailsService service = new CustomUserDetailsService();
 
         http.userDetailsService(service)
+            .csrf()
+            .disable()
             .authorizeRequests()
+            .antMatchers(HttpMethod.POST, "/api/users")
+            .permitAll()
             .anyRequest()
             .authenticated()
             .and()
