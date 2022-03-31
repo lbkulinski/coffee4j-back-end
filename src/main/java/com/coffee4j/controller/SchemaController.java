@@ -35,6 +35,13 @@ public final class SchemaController {
         LOGGER = LogManager.getLogger();
     } //static
 
+    /**
+     * Attempts to create a new schema using the specified parameters. A default flag and shared flag are required for
+     * creation.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the create operation
+     */
     @PostMapping
     public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
         Authentication authentication = SecurityContextHolder.getContext()
@@ -158,6 +165,12 @@ public final class SchemaController {
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //create
 
+    /**
+     * Attempts to read the schema data of the current logged-in user. Assuming data exists, the ID, creator ID,
+     * default flag, and shared flag are returned.
+     *
+     * @return a {@link ResponseEntity} containing the outcome of the read operation
+     */
     @GetMapping
     public ResponseEntity<Map<String, ?>> read(@RequestParam Map<String, Object> parameters) {
         Authentication authentication = SecurityContextHolder.getContext()
@@ -354,6 +367,13 @@ public final class SchemaController {
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
 
+    /**
+     * Attempts to update the schema data of the current logged-in user using the specified parameters. A schema ID is
+     * required for updating. A schema's default flag and shared flag can be updated. At least one update is required.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the update operation
+     */
     @PutMapping
     public ResponseEntity<Map<String, ?>> update(@RequestBody Map<String, Object> parameters) {
         Authentication authentication = SecurityContextHolder.getContext()
@@ -512,6 +532,12 @@ public final class SchemaController {
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //update
 
+    /**
+     * Attempts to delete the schema data of the current logged-in user using the specified parameters. A schema ID is
+     * required for deletion.
+     *
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
     @DeleteMapping
     public ResponseEntity<Map<String, ?>> delete(@RequestBody Map<String, Object> parameters) {
         Authentication authentication = SecurityContextHolder.getContext()

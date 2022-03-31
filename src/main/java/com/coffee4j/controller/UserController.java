@@ -167,8 +167,8 @@ public final class UserController {
     } //create
 
     /**
-     * Attempts to read existing user data for the current logged-in user. A user must be logged in to read their data.
-     * Assuming data exists for the logged-in user, their ID and username are returned.
+     * Attempts to read the user data of the current logged-in user. Assuming data exists, the ID and username are
+     * returned.
      *
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
@@ -284,8 +284,8 @@ public final class UserController {
     } //read
 
     /**
-     * Attempts to update existing user data using the specified parameters. A user must be logged in to update their
-     * data. A user's username and password can be updated. At least one is required.
+     * Attempts to update the user data of the current logged-in user using the specified parameters. A user's username
+     * and password can be updated. At least one update is required.
      *
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the update operation
@@ -443,7 +443,7 @@ public final class UserController {
     } //update
 
     /**
-     * Attempts to delete the data of the current logged-in user. A user must be logged in to delete their data.
+     * Attempts to delete the user data of the current logged-in user.
      *
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
      */
