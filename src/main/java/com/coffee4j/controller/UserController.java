@@ -1,6 +1,7 @@
 package com.coffee4j.controller;
 
 import com.coffee4j.Utilities;
+import com.coffee4j.security.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -177,7 +178,13 @@ public final class UserController {
         Authentication authentication = SecurityContextHolder.getContext()
                                                              .getAuthentication();
 
-        String username = authentication.getName();
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof User user)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        String id = user.id();
 
         Connection connection = Utilities.getConnection();
 
@@ -192,28 +199,27 @@ public final class UserController {
 
         String userQuery = """
             SELECT
-                `id`,
                 `username`
             FROM
                 `users`
             WHERE
-                `username` = ?""";
+                `id` = ?""";
 
         PreparedStatement preparedStatement = null;
 
         ResultSet resultSet = null;
 
-        Map<String, ?> user;
+        Map<String, ?> userData;
 
         try {
             preparedStatement = connection.prepareStatement(userQuery);
 
-            preparedStatement.setString(1, username);
+            preparedStatement.setString(1, id);
 
             resultSet = preparedStatement.executeQuery();
 
             if (!resultSet.next()) {
-                String message = "A user with the username \"%s\" could not be found".formatted(username);
+                String message = "A user with the ID \"%s\" could not be found".formatted(id);
 
                 Map<String, ?> errorMap = Map.of(
                     "success", false,
@@ -223,12 +229,10 @@ public final class UserController {
                 return new ResponseEntity<>(errorMap, HttpStatus.OK);
             } //end if
 
-            String rowId = resultSet.getString("id");
-
             String rowUsername = resultSet.getString("username");
 
-            user = Map.of(
-                "id", rowId,
+            userData = Map.of(
+                "id", id,
                 "username", rowUsername
             );
         } catch (SQLException e) {
@@ -274,7 +278,7 @@ public final class UserController {
 
         Map<String, ?> successMap = Map.of(
             "success", true,
-            "user", user
+            "user", userData
         );
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
@@ -292,7 +296,13 @@ public final class UserController {
         Authentication authentication = SecurityContextHolder.getContext()
                                                              .getAuthentication();
 
-        String currentUsername = authentication.getName();
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof User user)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        String id = user.id();
 
         String usernameKey = "username";
 
@@ -335,7 +345,7 @@ public final class UserController {
             arguments.add(passwordHash);
         } //end if
 
-        arguments.add(currentUsername);
+        arguments.add(id);
 
         if (setStatements.isEmpty()) {
             Map<String, ?> errorMap = Map.of(
@@ -361,7 +371,7 @@ public final class UserController {
             UPDATE `users`
             SET
             %s
-            WHERE `username` = ?""";
+            WHERE `id` = ?""";
 
         String setStatementsString = setStatements.stream()
                                                   .reduce("%s,\n%s"::formatted)
@@ -443,7 +453,13 @@ public final class UserController {
         Authentication authentication = SecurityContextHolder.getContext()
                                                              .getAuthentication();
 
-        String username = authentication.getName();
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof User user)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        String id = user.id();
 
         Connection connection = Utilities.getConnection();
 
@@ -459,7 +475,7 @@ public final class UserController {
         String deleteUserStatement = """
             DELETE FROM `users`
             WHERE
-                `username` = ?""";
+                `id` = ?""";
 
         PreparedStatement preparedStatement = null;
 
@@ -468,7 +484,7 @@ public final class UserController {
         try {
             preparedStatement = connection.prepareStatement(deleteUserStatement);
 
-            preparedStatement.setString(1, username);
+            preparedStatement.setString(1, id);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {

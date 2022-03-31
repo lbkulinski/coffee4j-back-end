@@ -23,49 +23,6 @@ public final class CustomUserDetailsService implements UserDetailsService {
         LOGGER = LogManager.getLogger();
     } //static
 
-    private record CustomUserDetails(String username, String password) implements UserDetails {
-        private CustomUserDetails {
-            Objects.requireNonNull(username, "the specified username is null");
-
-            Objects.requireNonNull(password, "the specified password is null");
-        } //CustomUserDetails
-
-        @Override
-        public String getUsername() {
-            return this.username;
-        } //getUsername
-
-        @Override
-        public String getPassword() {
-            return this.password;
-        } //getPassword
-
-        @Override
-        public Collection<? extends GrantedAuthority> getAuthorities() {
-            return List.of();
-        } //getAuthorities
-
-        @Override
-        public boolean isAccountNonExpired() {
-            return true;
-        } //isAccountNonExpired
-
-        @Override
-        public boolean isAccountNonLocked() {
-            return true;
-        } //isAccountNonLocked
-
-        @Override
-        public boolean isCredentialsNonExpired() {
-            return true;
-        } //isCredentialsNonExpired
-
-        @Override
-        public boolean isEnabled() {
-            return true;
-        } //isEnabled
-    } //CustomUserDetails
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Objects.requireNonNull(username, "the specified username is null");
@@ -78,6 +35,8 @@ public final class CustomUserDetailsService implements UserDetailsService {
 
         String userQuery = """
             SELECT
+                `id`,
+                `username`,
                 `password_hash`
             FROM
                 `users`
@@ -88,7 +47,11 @@ public final class CustomUserDetailsService implements UserDetailsService {
 
         ResultSet resultSet = null;
 
-        String passwordHash;
+        String rowId;
+
+        String rowUsername;
+
+        String rowPasswordHash;
 
         try {
             preparedStatement = connection.prepareStatement(userQuery);
@@ -103,7 +66,11 @@ public final class CustomUserDetailsService implements UserDetailsService {
                 throw new UsernameNotFoundException(message);
             } //end if
 
-            passwordHash = resultSet.getString("password_hash");
+            rowId = resultSet.getString("id");
+
+            rowUsername = resultSet.getString("username");
+
+            rowPasswordHash = resultSet.getString("password_hash");
         } catch (SQLException e) {
             CustomUserDetailsService.LOGGER.atError()
                                            .withThrowable(e)
@@ -140,6 +107,6 @@ public final class CustomUserDetailsService implements UserDetailsService {
             } //end if
         } //end try catch finally
 
-        return new CustomUserDetails(username, passwordHash);
+        return new User(rowId, rowUsername, rowPasswordHash);
     } //loadUserByUsername
 }
