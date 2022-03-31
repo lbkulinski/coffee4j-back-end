@@ -167,7 +167,7 @@ public final class SchemaController {
 
     /**
      * Attempts to read the schema data of the current logged-in user using the specified parameters. Assuming data
-     * exists, the ID, creator ID, default flag, and shared flag are returned.
+     * exists, the ID, creator ID, default flag, and shared flag of each schema are returned.
      *
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation

@@ -178,7 +178,7 @@ public final class FieldController {
 
     /**
      * Attempts to read the field data of the current logged-in user using the specified parameters. Assuming data
-     * exists, the ID, name, type ID, and display name are returned.
+     * exists, the ID, name, type ID, and display name of each field are returned.
      *
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation

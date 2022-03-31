@@ -167,8 +167,8 @@ public final class UserController {
     } //create
 
     /**
-     * Attempts to read the user data of the current logged-in user. Assuming data exists, the ID and username are
-     * returned.
+     * Attempts to read the user data of the current logged-in user. Assuming data exists, the ID and username of the
+     * current logged-in user are returned.
      *
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
