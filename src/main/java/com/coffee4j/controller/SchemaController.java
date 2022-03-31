@@ -27,7 +27,7 @@ import java.util.*;
 @RequestMapping("api/schemas")
 public final class SchemaController {
     /**
-     * The {@link Logger} of the {@link UserController} class.
+     * The {@link Logger} of the {@link SchemaController} class.
      */
     private static final Logger LOGGER;
 
@@ -53,7 +53,7 @@ public final class SchemaController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        String id = user.id();
+        String creatorId = user.id();
 
         String defaultFlagKey = "default";
 
@@ -110,7 +110,7 @@ public final class SchemaController {
         try {
             preparedStatement = connection.prepareStatement(insertSchemaStatement);
 
-            preparedStatement.setString(1, id);
+            preparedStatement.setString(1, creatorId);
 
             preparedStatement.setBoolean(2, defaultFlag);
 
