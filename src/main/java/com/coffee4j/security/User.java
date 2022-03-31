@@ -14,7 +14,7 @@ public record User(String id, String username, String password) implements UserD
         Objects.requireNonNull(username, "the specified username is null");
 
         Objects.requireNonNull(password, "the specified password is null");
-    } //CustomUserDetails
+    } //User
 
     @Override
     public String getUsername() {
@@ -50,4 +50,4 @@ public record User(String id, String username, String password) implements UserD
     public boolean isEnabled() {
         return true;
     } //isEnabled
-} //CustomUserDetails
+}
