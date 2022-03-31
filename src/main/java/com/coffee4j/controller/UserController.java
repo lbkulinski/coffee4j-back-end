@@ -18,7 +18,7 @@ import java.util.*;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 26, 2022
+ * @version March 31, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -281,26 +281,18 @@ public final class UserController {
     } //read
 
     /**
-     * Attempts to update existing user data using the specified parameters. An ID is required for updating. A user's
-     * username and password can be updated. At least one is required.
+     * Attempts to update existing user data using the specified parameters. A user must be logged in to update their
+     * data. A user's username and password can be updated. At least one is required.
      *
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
     @PutMapping
     public ResponseEntity<Map<String, ?>> update(@RequestBody Map<String, Object> parameters) {
-        String idKey = "id";
+        Authentication authentication = SecurityContextHolder.getContext()
+                                                             .getAuthentication();
 
-        String id = Utilities.getParameter(parameters, idKey, String.class);
-
-        if (id == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "An ID is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
+        String currentUsername = authentication.getName();
 
         String usernameKey = "username";
 
@@ -343,7 +335,7 @@ public final class UserController {
             arguments.add(passwordHash);
         } //end if
 
-        arguments.add(id);
+        arguments.add(currentUsername);
 
         if (setStatements.isEmpty()) {
             Map<String, ?> errorMap = Map.of(
@@ -369,7 +361,7 @@ public final class UserController {
             UPDATE `users`
             SET
             %s
-            WHERE `id` = ?""";
+            WHERE `username` = ?""";
 
         String setStatementsString = setStatements.stream()
                                                   .reduce("%s,\n%s"::formatted)
@@ -442,25 +434,16 @@ public final class UserController {
     } //update
 
     /**
-     * Attempts to delete an existing user using the specified parameters. An ID is required for deletion.
+     * Attempts to delete the data of the current logged-in user. A user must be logged in to delete their data.
      *
-     * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
      */
     @DeleteMapping
-    public ResponseEntity<Map<String, ?>> delete(@RequestBody Map<String, Object> parameters) {
-        String idKey = "id";
+    public ResponseEntity<Map<String, ?>> delete() {
+        Authentication authentication = SecurityContextHolder.getContext()
+                                                             .getAuthentication();
 
-        String id = Utilities.getParameter(parameters, idKey, String.class);
-
-        if (id == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "An ID is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
+        String username = authentication.getName();
 
         Connection connection = Utilities.getConnection();
 
@@ -476,7 +459,7 @@ public final class UserController {
         String deleteUserStatement = """
             DELETE FROM `users`
             WHERE
-                `id` = ?""";
+                `username` = ?""";
 
         PreparedStatement preparedStatement = null;
 
@@ -485,7 +468,7 @@ public final class UserController {
         try {
             preparedStatement = connection.prepareStatement(deleteUserStatement);
 
-            preparedStatement.setString(1, id);
+            preparedStatement.setString(1, username);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {

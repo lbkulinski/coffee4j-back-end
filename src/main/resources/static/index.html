@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Coffee4j</title>
+</head>
+<body>
+</body>
+<script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script>
+    $(function () {
+        $.ajax({
+            "type": "DELETE",
+            "url": "http://localhost:8080/api/users",
+            "success": function (response) {
+                console.log(response)
+            }
+        });
+    });
+</script>
+</html>
