@@ -511,4 +511,107 @@ public final class SchemaController {
 
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //update
+
+    @DeleteMapping
+    public ResponseEntity<Map<String, ?>> delete(@RequestBody Map<String, Object> parameters) {
+        Authentication authentication = SecurityContextHolder.getContext()
+                                                             .getAuthentication();
+
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof User user)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        String creatorId = user.id();
+
+        String idKey = "id";
+
+        String id = Utilities.getParameter(parameters, idKey, String.class);
+
+        if (id == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "A schema ID is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        Connection connection = Utilities.getConnection();
+
+        if (connection == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The schema could not be deleted"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
+        String deleteUserStatement = """
+            DELETE FROM `schemas`
+            WHERE
+                (`id` = ?)
+                    AND (`creator_id` = ?)""";
+
+        PreparedStatement preparedStatement = null;
+
+        int rowsChanged;
+
+        try {
+            preparedStatement = connection.prepareStatement(deleteUserStatement);
+
+            preparedStatement.setString(1, id);
+
+            preparedStatement.setString(2, creatorId);
+
+            rowsChanged = preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            SchemaController.LOGGER.atError()
+                                   .withThrowable(e)
+                                   .log();
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The schema could not be deleted"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                SchemaController.LOGGER.atError()
+                                       .withThrowable(e)
+                                       .log();
+            } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
+        } //end try catch
+
+        Map<String, ?> responseMap;
+
+        if (rowsChanged == 0) {
+            responseMap = Map.of(
+                "success", false,
+                "message", "A schema with the specified ID and creator ID could not be found"
+            );
+        } else {
+            responseMap = Map.of(
+                "success", true,
+                "message", "The schema was successfully deleted"
+            );
+        } //end if
+
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+    } //delete
 }

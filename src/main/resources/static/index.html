@@ -10,15 +10,13 @@
 <script>
     $(function () {
         let data = {
-            "id": "1",
-            "default": true,
-            "shared": true
+            "id": "1"
         };
 
         let dataString = JSON.stringify(data);
 
         $.ajax({
-            "type": "PUT",
+            "type": "DELETE",
             "url": "http://localhost:8080/api/schemas",
             "contentType": "application/json",
             "data": dataString,
