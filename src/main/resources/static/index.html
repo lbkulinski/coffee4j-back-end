@@ -10,6 +10,7 @@
 <script>
     $(function () {
         let data = {
+            "id": "1",
             "default": true,
             "shared": true
         };
@@ -17,7 +18,7 @@
         let dataString = JSON.stringify(data);
 
         $.ajax({
-            "type": "POST",
+            "type": "PUT",
             "url": "http://localhost:8080/api/schemas",
             "contentType": "application/json",
             "data": dataString,
