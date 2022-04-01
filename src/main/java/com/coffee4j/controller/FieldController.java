@@ -499,7 +499,7 @@ public final class FieldController {
 
         String sharedFlagKey = "shared";
 
-        Boolean sharedFlag = Utilities.getParameter(parameters, displayNameKey, Boolean.class);
+        Boolean sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, Boolean.class);
 
         if (sharedFlag != null) {
             String setStatement = "    `shared` = ?";
@@ -608,4 +608,114 @@ public final class FieldController {
 
         return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //update
+
+    /**
+     * Attempts to delete the field data of the current logged-in user using the specified parameters. A field ID is
+     * required for deletion.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
+    @DeleteMapping
+    public ResponseEntity<Map<String, ?>> delete(@RequestBody Map<String, Object> parameters) {
+        Authentication authentication = SecurityContextHolder.getContext()
+                                                             .getAuthentication();
+
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof User user)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        int creatorId = user.id();
+
+        String idKey = "id";
+
+        Integer id = Utilities.getParameter(parameters, idKey, Integer.class);
+
+        if (id == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "A schema ID is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        Connection connection = Utilities.getConnection();
+
+        if (connection == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The field could not be deleted"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
+        String deleteFieldStatement = """
+            DELETE FROM `fields`
+            WHERE
+                (`id` = ?)
+                    AND (`creator_id` = ?)""";
+
+        PreparedStatement preparedStatement = null;
+
+        int rowsChanged;
+
+        try {
+            preparedStatement = connection.prepareStatement(deleteFieldStatement);
+
+            preparedStatement.setInt(1, id);
+
+            preparedStatement.setInt(2, creatorId);
+
+            rowsChanged = preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            FieldController.LOGGER.atError()
+                                  .withThrowable(e)
+                                  .log();
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The field could not be deleted"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                FieldController.LOGGER.atError()
+                                      .withThrowable(e)
+                                      .log();
+            } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    FieldController.LOGGER.atError()
+                                          .withThrowable(e)
+                                          .log();
+                } //end try catch
+            } //end if
+        } //end try catch finally
+
+        Map<String, ?> responseMap;
+
+        if (rowsChanged == 0) {
+            responseMap = Map.of(
+                "success", false,
+                "message", "A field with the specified ID and creator ID could not be found"
+            );
+        } else {
+            responseMap = Map.of(
+                "success", true,
+                "message", "The field was successfully deleted"
+            );
+        } //end if
+
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+    } //delete
 }

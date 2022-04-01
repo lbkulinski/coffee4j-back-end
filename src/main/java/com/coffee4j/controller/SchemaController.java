@@ -529,6 +529,7 @@ public final class SchemaController {
      * Attempts to delete the schema data of the current logged-in user using the specified parameters. A schema ID is
      * required for deletion.
      *
+     * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
      */
     @DeleteMapping
