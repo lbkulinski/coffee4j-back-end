@@ -212,22 +212,61 @@ public final class FieldController {
 
         Object principal = authentication.getPrincipal();
 
-        if (!(principal instanceof User)) {
+        if (!(principal instanceof User user)) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        int creatorId = user.id();
+
+        String sharedFlagKey = "shared";
+
+        String sharedFlagString = Utilities.getParameter(parameters, sharedFlagKey, String.class);
+
+        Set<String> whereSubclauses = new HashSet<>();
+
+        List<Object> whereArguments = new ArrayList<>();
+
+        if (sharedFlagString == null) {
+            String creatorIdSubclause = "(`creator_id` = ?)";
+
+            whereSubclauses.add(creatorIdSubclause);
+
+            whereArguments.add(creatorId);
+        } else {
+            String sharedFlagSubclause = "(`shared` = ?)";
+
+            whereSubclauses.add(sharedFlagSubclause);
+
+            boolean sharedFlag = Boolean.parseBoolean(sharedFlagString);
+
+            whereArguments.add(sharedFlag);
         } //end if
 
         String idKey = "id";
 
-        String id = Utilities.getParameter(parameters, idKey, String.class);
+        String idString = Utilities.getParameter(parameters, idKey, String.class);
 
-        Set<String> whereSubclauses = new HashSet<>();
+        if (idString != null) {
+            int id;
 
-        List<String> whereArguments = new ArrayList<>();
+            try {
+                id = Integer.parseInt(idString);
+            } catch (NumberFormatException e) {
+                FieldController.LOGGER.atError()
+                                      .withThrowable(e)
+                                      .log();
 
-        if (id != null) {
-            String subclause = "(`id` = ?)";
+                Map<String, ?> errorMap = Map.of(
+                    "success", false,
+                    "message", "The specified ID is not a valid int"
+                );
 
-            whereSubclauses.add(subclause);
+                return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+            } //end try catch
+
+            String idSubclause = "(`id` = ?)";
+
+            whereSubclauses.add(idSubclause);
 
             whereArguments.add(id);
         } //end if
@@ -279,25 +318,21 @@ public final class FieldController {
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
+        String whereClause = whereSubclauses.stream()
+                                            .reduce("%s\nAND %s"::formatted)
+                                            .get();
+
         String fieldQuery = """
             SELECT
                 `id`,
+                `creator_id`,
                 `name`,
                 `type_id`,
                 `display_name`
             FROM
-                `fields`""";
-
-        if (!whereSubclauses.isEmpty()) {
-            String whereClause = whereSubclauses.stream()
-                                                .reduce("%s\nAND %s"::formatted)
-                                                .get();
-
-            fieldQuery += """
-                
-                WHERE
-                %s""".formatted(whereClause);
-        } //end if
+                `fields`
+            WHERE
+            %s""".formatted(whereClause);
 
         PreparedStatement preparedStatement = null;
 
@@ -311,24 +346,27 @@ public final class FieldController {
             for (int i = 0; i < whereArguments.size(); i++) {
                 int parameterIndex = i + 1;
 
-                String argument = whereArguments.get(i);
+                Object argument = whereArguments.get(i);
 
-                preparedStatement.setString(parameterIndex, argument);
+                preparedStatement.setObject(parameterIndex, argument);
             } //end for
 
             resultSet = preparedStatement.executeQuery();
 
             while (resultSet.next()) {
-                String rowId = resultSet.getString("id");
+                int rowId = resultSet.getInt("id");
+
+                int rowCreatorId = resultSet.getInt("creator_id");
 
                 String rowName = resultSet.getString("name");
 
-                String rowTypeId = resultSet.getString("type_id");
+                int rowTypeId = resultSet.getInt("type_id");
 
                 String rowDisplayName = resultSet.getString("display_name");
 
                 Map<String, ?> fieldDatum = Map.of(
                     "id", rowId,
+                    "creator_id", rowCreatorId,
                     "name", rowName,
                     "type_id", rowTypeId,
                     "display_name", rowDisplayName

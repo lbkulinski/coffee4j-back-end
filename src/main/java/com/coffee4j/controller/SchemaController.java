@@ -184,70 +184,71 @@ public final class SchemaController {
 
         int creatorId = user.id();
 
-        String idKey = "id";
+        String sharedFlagKey = "shared";
 
-        String id = Utilities.getParameter(parameters, idKey, String.class);
+        String sharedFlagString = Utilities.getParameter(parameters, sharedFlagKey, String.class);
 
         Set<String> whereSubclauses = new HashSet<>();
 
         List<Object> whereArguments = new ArrayList<>();
 
-        if (id != null) {
+        if (sharedFlagString == null) {
+            String subclause = "(`creator_id` = ?)";
+
+            whereSubclauses.add(subclause);
+
+            whereArguments.add(creatorId);
+        } else {
+            String subclause = "(`shared` = ?)";
+
+            whereSubclauses.add(subclause);
+
+            boolean sharedFlag = Boolean.parseBoolean(sharedFlagString);
+
+            whereArguments.add(sharedFlag);
+        } //end if
+
+        String idKey = "id";
+
+        String idString = Utilities.getParameter(parameters, idKey, String.class);
+
+        if (idString != null) {
+            int id;
+
+            try {
+                id = Integer.parseInt(idString);
+            } catch (NumberFormatException e) {
+                SchemaController.LOGGER.atError()
+                                       .withThrowable(e)
+                                       .log();
+
+                Map<String, ?> errorMap = Map.of(
+                    "success", false,
+                    "message", "The specified ID is not a valid int"
+                );
+
+                return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+            } //end try catch
+
             String idSubclause = "(`id` = ?)";
 
             whereSubclauses.add(idSubclause);
 
             whereArguments.add(id);
-
-            String creatorIdWhereSubclause = "(`creator_id` = ?)";
-
-            whereSubclauses.add(creatorIdWhereSubclause);
-
-            whereArguments.add(creatorId);
         } //end if
 
         String defaultFlagKey = "default";
 
-        String defaultFlag = Utilities.getParameter(parameters, defaultFlagKey, String.class);
+        String defaultFlagString = Utilities.getParameter(parameters, defaultFlagKey, String.class);
 
-        if (defaultFlag != null) {
+        if (defaultFlagString != null) {
             String defaultFlagSubclause = "(`default` = ?)";
 
             whereSubclauses.add(defaultFlagSubclause);
 
-            defaultFlag = defaultFlag.strip();
-
-            defaultFlag = defaultFlag.toLowerCase();
-
-            defaultFlag = Objects.equals(defaultFlag, "true") ? "1" : "0";
+            boolean defaultFlag = Boolean.parseBoolean(defaultFlagString);
 
             whereArguments.add(defaultFlag);
-
-            String creatorIdSubclause = "(`creator_id` = ?)";
-
-            boolean added = whereSubclauses.add(creatorIdSubclause);
-
-            if (added) {
-                whereArguments.add(creatorId);
-            } //end if
-        } //end if
-
-        String sharedFlagKey = "shared";
-
-        String sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, String.class);
-
-        if (sharedFlag != null) {
-            String subclause = "(`shared` = ?)";
-
-            whereSubclauses.add(subclause);
-
-            sharedFlag = sharedFlag.strip();
-
-            sharedFlag = sharedFlag.toLowerCase();
-
-            sharedFlag = Objects.equals(sharedFlag, "true") ? "1" : "0";
-
-            whereArguments.add(sharedFlag);
         } //end if
 
         Connection connection = Utilities.getConnection();
@@ -259,14 +260,6 @@ public final class SchemaController {
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } //end if
-
-        if (whereSubclauses.isEmpty()) {
-            String subclause = "`creator_id` = ?";
-
-            whereSubclauses.add(subclause);
-
-            whereArguments.add(creatorId);
         } //end if
 
         String whereClause = whereSubclauses.stream()
@@ -301,9 +294,9 @@ public final class SchemaController {
             resultSet = preparedStatement.executeQuery();
 
             while (resultSet.next()) {
-                String rowId = resultSet.getString("id");
+                int rowId = resultSet.getInt("id");
 
-                String rowCreatorId = resultSet.getString("creator_id");
+                int rowCreatorId = resultSet.getInt("creator_id");
 
                 boolean rowDefaultFlag = resultSet.getBoolean("default");
 
@@ -389,9 +382,9 @@ public final class SchemaController {
 
         String idKey = "id";
 
-        String id = Utilities.getParameter(parameters, idKey, String.class);
+        String idString = Utilities.getParameter(parameters, idKey, String.class);
 
-        if (id == null) {
+        if (idString == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
                 "message", "A schema ID is required"
@@ -399,6 +392,23 @@ public final class SchemaController {
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
+
+        int id;
+
+        try {
+            id = Integer.parseInt(idString);
+        } catch (NumberFormatException e) {
+            SchemaController.LOGGER.atError()
+                                   .withThrowable(e)
+                                   .log();
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The specified ID is not a valid int"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end try catch
 
         String defaultFlagKey = "default";
 
@@ -553,9 +563,9 @@ public final class SchemaController {
 
         String idKey = "id";
 
-        String id = Utilities.getParameter(parameters, idKey, String.class);
+        String idString = Utilities.getParameter(parameters, idKey, String.class);
 
-        if (id == null) {
+        if (idString == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
                 "message", "A schema ID is required"
@@ -563,6 +573,23 @@ public final class SchemaController {
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
+
+        int id;
+
+        try {
+            id = Integer.parseInt(idString);
+        } catch (NumberFormatException e) {
+            SchemaController.LOGGER.atError()
+                                   .withThrowable(e)
+                                   .log();
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The specified ID is not a valid int"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end try catch
 
         Connection connection = Utilities.getConnection();
 
@@ -588,7 +615,7 @@ public final class SchemaController {
         try {
             preparedStatement = connection.prepareStatement(deleteUserStatement);
 
-            preparedStatement.setString(1, id);
+            preparedStatement.setInt(1, id);
 
             preparedStatement.setInt(2, creatorId);
 

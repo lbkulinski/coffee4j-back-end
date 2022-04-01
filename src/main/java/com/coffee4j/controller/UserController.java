@@ -198,6 +198,7 @@ public final class UserController {
 
         String userQuery = """
             SELECT
+                `id`,
                 `username`
             FROM
                 `users`
@@ -228,10 +229,12 @@ public final class UserController {
                 return new ResponseEntity<>(errorMap, HttpStatus.OK);
             } //end if
 
+            int rowId = resultSet.getInt("id");
+
             String rowUsername = resultSet.getString("username");
 
             userData = Map.of(
-                "id", id,
+                "id", rowId,
                 "username", rowUsername
             );
         } catch (SQLException e) {
