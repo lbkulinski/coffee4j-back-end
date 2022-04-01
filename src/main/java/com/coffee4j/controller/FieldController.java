@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * The REST controller used to interact with the Coffee4j field data.
  *
- * @author Logan Kulinski, lbkulinski@icloud.com
+ * @author Logan Kulinski, lbkulinski@gmail.com
  * @version April 1, 2022
  */
 @RestController

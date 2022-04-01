@@ -17,8 +17,8 @@ import java.util.*;
 /**
  * The REST controller used to interact with the Coffee4j user data.
  *
- * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 31, 2022
+ * @author Logan Kulinski, lbkulinski@gmail.com
+ * @version April 1, 2022
  */
 @RestController
 @RequestMapping("api/users")
