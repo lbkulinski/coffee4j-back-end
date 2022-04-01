@@ -382,9 +382,9 @@ public final class SchemaController {
 
         String idKey = "id";
 
-        String idString = Utilities.getParameter(parameters, idKey, String.class);
+        Integer id = Utilities.getParameter(parameters, idKey, Integer.class);
 
-        if (idString == null) {
+        if (id == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
                 "message", "A schema ID is required"
@@ -392,23 +392,6 @@ public final class SchemaController {
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
-
-        int id;
-
-        try {
-            id = Integer.parseInt(idString);
-        } catch (NumberFormatException e) {
-            SchemaController.LOGGER.atError()
-                                   .withThrowable(e)
-                                   .log();
-
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "The specified ID is not a valid int"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end try catch
 
         String defaultFlagKey = "default";
 
@@ -563,9 +546,9 @@ public final class SchemaController {
 
         String idKey = "id";
 
-        String idString = Utilities.getParameter(parameters, idKey, String.class);
+        Integer id = Utilities.getParameter(parameters, idKey, Integer.class);
 
-        if (idString == null) {
+        if (id == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
                 "message", "A schema ID is required"
@@ -573,23 +556,6 @@ public final class SchemaController {
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
-
-        int id;
-
-        try {
-            id = Integer.parseInt(idString);
-        } catch (NumberFormatException e) {
-            SchemaController.LOGGER.atError()
-                                   .withThrowable(e)
-                                   .log();
-
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "The specified ID is not a valid int"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end try catch
 
         Connection connection = Utilities.getConnection();
 

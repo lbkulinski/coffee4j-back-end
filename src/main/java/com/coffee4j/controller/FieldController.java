@@ -422,4 +422,190 @@ public final class FieldController {
 
         return new ResponseEntity<>(successMap, HttpStatus.OK);
     } //read
+
+    /**
+     * Attempts to update the field data of the current logged-in user using the specified parameters. A field ID is
+     * required for updating. A field's name, type ID, display name, and shared flag can be updated. At least one
+     * update is required.
+     *
+     * @param parameters the parameters to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the update operation
+     */
+    @PutMapping
+    public ResponseEntity<Map<String, ?>> update(@RequestBody Map<String, Object> parameters) {
+        Authentication authentication = SecurityContextHolder.getContext()
+                                                             .getAuthentication();
+
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof User user)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        int creatorId = user.id();
+
+        String idKey = "id";
+
+        Integer id = Utilities.getParameter(parameters, idKey, Integer.class);
+
+        if (id == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "A schema ID is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String nameKey = "name";
+
+        String name = Utilities.getParameter(parameters, nameKey, String.class);
+
+        Set<String> setStatements = new HashSet<>();
+
+        List<Object> arguments = new ArrayList<>();
+
+        if (name != null) {
+            String setStatement = "    `name` = ?";
+
+            setStatements.add(setStatement);
+
+            arguments.add(name);
+        } //end if
+
+        String typeIdKey = "type_id";
+
+        Integer typeId = Utilities.getParameter(parameters, typeIdKey, Integer.class);
+
+        if (typeId != null) {
+            String setStatement = "    `type_id` = ?";
+
+            setStatements.add(setStatement);
+
+            arguments.add(typeId);
+        } //end if
+
+        String displayNameKey = "display_name";
+
+        String displayName = Utilities.getParameter(parameters, displayNameKey, String.class);
+
+        if (displayName != null) {
+            String setStatement = "    `display_name` = ?";
+
+            setStatements.add(setStatement);
+
+            arguments.add(displayName);
+        } //end if
+
+        String sharedFlagKey = "shared";
+
+        Boolean sharedFlag = Utilities.getParameter(parameters, displayNameKey, Boolean.class);
+
+        if (sharedFlag != null) {
+            String setStatement = "    `shared` = ?";
+
+            setStatements.add(setStatement);
+
+            arguments.add(sharedFlag);
+        } //end if
+
+        if (setStatements.isEmpty()) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "At lease one update is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        arguments.add(id);
+
+        arguments.add(creatorId);
+
+        Connection connection = Utilities.getConnection();
+
+        if (connection == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The field's data could not be updated"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end if
+
+        String setStatementsString = setStatements.stream()
+                                                  .reduce("%s,\n%s"::formatted)
+                                                  .get();
+
+        String updateFieldStatement = """
+            UPDATE `fields`
+            SET
+            %s
+            WHERE
+                (`id` = ?)
+                    AND (`creator_id` = ?)""".formatted(setStatementsString);
+
+        PreparedStatement preparedStatement = null;
+
+        int rowsChanged;
+
+        try {
+            preparedStatement = connection.prepareStatement(updateFieldStatement);
+
+            for (int i = 0; i < arguments.size(); i++) {
+                int parameterIndex = i + 1;
+
+                Object argument = arguments.get(i);
+
+                preparedStatement.setObject(parameterIndex, argument);
+            } //end for
+
+            rowsChanged = preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            FieldController.LOGGER.atError()
+                                  .withThrowable(e)
+                                  .log();
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "The field's data could not be updated"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                FieldController.LOGGER.atError()
+                                      .withThrowable(e)
+                                      .log();
+            } //end try catch
+
+            if (preparedStatement != null) {
+                try {
+                    preparedStatement.close();
+                } catch (SQLException e) {
+                    FieldController.LOGGER.atError()
+                                          .withThrowable(e)
+                                          .log();
+                } //end try catch
+            } //end if
+        } //end try catch finally
+
+        Map<String, ?> responseMap;
+
+        if (rowsChanged == 0) {
+            responseMap = Map.of(
+                "success", false,
+                "message", "A field with the specified ID and creator ID could not be found"
+            );
+        } else {
+            responseMap = Map.of(
+                "success", true,
+                "message", "The field information was successfully updated"
+            );
+        } //end if
+
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+    } //update
 }
