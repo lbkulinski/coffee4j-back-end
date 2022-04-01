@@ -52,7 +52,7 @@ public final class FieldController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        String creatorId = user.id();
+        int creatorId = user.id();
 
         String nameKey = "name";
 
@@ -139,7 +139,7 @@ public final class FieldController {
         try {
             preparedStatement = connection.prepareStatement(insertFieldStatement);
 
-            preparedStatement.setString(1, creatorId);
+            preparedStatement.setInt(1, creatorId);
 
             preparedStatement.setString(2, name);
 
@@ -298,8 +298,6 @@ public final class FieldController {
                 WHERE
                 %s""".formatted(whereClause);
         } //end if
-
-        System.out.println(fieldQuery);
 
         PreparedStatement preparedStatement = null;
 

@@ -5,7 +5,6 @@ import com.coffee4j.security.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,7 +20,7 @@ import java.util.*;
  * The REST controller used to interact with the Coffee4j schema data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 31, 2022
+ * @version April 1, 2022
  */
 @RestController
 @RequestMapping("api/schemas")
@@ -53,7 +52,7 @@ public final class SchemaController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        String creatorId = user.id();
+        int creatorId = user.id();
 
         String defaultFlagKey = "default";
 
@@ -110,7 +109,7 @@ public final class SchemaController {
         try {
             preparedStatement = connection.prepareStatement(insertSchemaStatement);
 
-            preparedStatement.setString(1, creatorId);
+            preparedStatement.setInt(1, creatorId);
 
             preparedStatement.setBoolean(2, defaultFlag);
 
@@ -183,7 +182,7 @@ public final class SchemaController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        String creatorId = user.id();
+        int creatorId = user.id();
 
         String idKey = "id";
 
@@ -191,7 +190,7 @@ public final class SchemaController {
 
         Set<String> whereSubclauses = new HashSet<>();
 
-        List<String> whereArguments = new ArrayList<>();
+        List<Object> whereArguments = new ArrayList<>();
 
         if (id != null) {
             String idSubclause = "(`id` = ?)";
@@ -294,9 +293,9 @@ public final class SchemaController {
             for (int i = 0; i < whereArguments.size(); i++) {
                 int parameterIndex = i + 1;
 
-                String argument = whereArguments.get(i);
+                Object argument = whereArguments.get(i);
 
-                preparedStatement.setString(parameterIndex, argument);
+                preparedStatement.setObject(parameterIndex, argument);
             } //end for
 
             resultSet = preparedStatement.executeQuery();
@@ -386,7 +385,7 @@ public final class SchemaController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        String creatorId = user.id();
+        int creatorId = user.id();
 
         String idKey = "id";
 
@@ -407,7 +406,7 @@ public final class SchemaController {
 
         Set<String> setStatements = new HashSet<>();
 
-        List<String> arguments = new ArrayList<>();
+        List<Object> arguments = new ArrayList<>();
 
         if (defaultFlag != null) {
             String setStatement = "    `default` = ?";
@@ -479,9 +478,9 @@ public final class SchemaController {
             for (int i = 0; i < arguments.size(); i++) {
                 int parameterIndex = i + 1;
 
-                String argument = arguments.get(i);
+                Object argument = arguments.get(i);
 
-                preparedStatement.setString(parameterIndex, argument);
+                preparedStatement.setObject(parameterIndex, argument);
             } //end for
 
             rowsChanged = preparedStatement.executeUpdate();
@@ -550,7 +549,7 @@ public final class SchemaController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        String creatorId = user.id();
+        int creatorId = user.id();
 
         String idKey = "id";
 
@@ -591,7 +590,7 @@ public final class SchemaController {
 
             preparedStatement.setString(1, id);
 
-            preparedStatement.setString(2, creatorId);
+            preparedStatement.setInt(2, creatorId);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {

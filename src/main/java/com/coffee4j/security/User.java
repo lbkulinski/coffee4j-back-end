@@ -7,10 +7,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-public record User(String id, String username, String password) implements UserDetails {
+public record User(int id, String username, String password) implements UserDetails {
     public User {
-        Objects.requireNonNull(id, "the specified ID is null");
-
         Objects.requireNonNull(username, "the specified username is null");
 
         Objects.requireNonNull(password, "the specified password is null");

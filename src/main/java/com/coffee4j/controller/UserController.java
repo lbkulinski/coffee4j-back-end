@@ -183,7 +183,7 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        String id = user.id();
+        int id = user.id();
 
         Connection connection = Utilities.getConnection();
 
@@ -213,7 +213,7 @@ public final class UserController {
         try {
             preparedStatement = connection.prepareStatement(userQuery);
 
-            preparedStatement.setString(1, id);
+            preparedStatement.setInt(1, id);
 
             resultSet = preparedStatement.executeQuery();
 
@@ -301,7 +301,7 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        String id = user.id();
+        int id = user.id();
 
         String usernameKey = "username";
 
@@ -309,7 +309,7 @@ public final class UserController {
 
         Set<String> setStatements = new HashSet<>();
 
-        List<String> arguments = new ArrayList<>();
+        List<Object> arguments = new ArrayList<>();
 
         if ((username != null) && (username.length() > MAX_USERNAME_LENGTH)) {
             String message = "A username cannot exceed %d characters".formatted(MAX_USERNAME_LENGTH);
@@ -388,9 +388,9 @@ public final class UserController {
             for (int i = 0; i < arguments.size(); i++) {
                 int argumentIndex = i + 1;
 
-                String argument = arguments.get(i);
+                Object argument = arguments.get(i);
 
-                preparedStatement.setString(argumentIndex, argument);
+                preparedStatement.setObject(argumentIndex, argument);
             } //end for
 
             rowsChanged = preparedStatement.executeUpdate();
@@ -458,7 +458,7 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        String id = user.id();
+        int id = user.id();
 
         Connection connection = Utilities.getConnection();
 
@@ -483,7 +483,7 @@ public final class UserController {
         try {
             preparedStatement = connection.prepareStatement(deleteUserStatement);
 
-            preparedStatement.setString(1, id);
+            preparedStatement.setInt(1, id);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {

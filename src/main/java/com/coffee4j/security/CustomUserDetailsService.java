@@ -47,7 +47,7 @@ public final class CustomUserDetailsService implements UserDetailsService {
 
         ResultSet resultSet = null;
 
-        String rowId;
+        int rowId;
 
         String rowUsername;
 
@@ -66,7 +66,7 @@ public final class CustomUserDetailsService implements UserDetailsService {
                 throw new UsernameNotFoundException(message);
             } //end if
 
-            rowId = resultSet.getString("id");
+            rowId = resultSet.getInt("id");
 
             rowUsername = resultSet.getString("username");
 
