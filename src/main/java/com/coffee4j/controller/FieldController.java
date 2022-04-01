@@ -20,7 +20,7 @@ import java.util.*;
  * The REST controller used to interact with the Coffee4j field data.
  *
  * @author Logan Kulinski, lbkulinski@icloud.com
- * @version March 31, 2022
+ * @version April 1, 2022
  */
 @RestController
 @RequestMapping("api/fields")
@@ -35,8 +35,8 @@ public final class FieldController {
     } //static
 
     /**
-     * Attempts to create a new field using the specified parameters. A name, type ID, and display name are required
-     * for creation.
+     * Attempts to create a new field using the specified parameters. A name, type ID, display name, and shared flag
+     * are required for creation.
      *
      * @param parameters the parameters to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the create operation
@@ -48,9 +48,11 @@ public final class FieldController {
 
         Object principal = authentication.getPrincipal();
 
-        if (!(principal instanceof User)) {
+        if (!(principal instanceof User user)) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
+
+        String creatorId = user.id();
 
         String nameKey = "name";
 
@@ -85,7 +87,20 @@ public final class FieldController {
         if (displayName == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "A type ID is required"
+                "message", "A display name is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String sharedFlagKey = "shared";
+
+        Boolean sharedFlag = Utilities.getParameter(parameters, sharedFlagKey, Boolean.class);
+
+        if (sharedFlag == null) {
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", "A shared flag is required"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
@@ -104,10 +119,13 @@ public final class FieldController {
 
         String insertFieldStatement = """
             INSERT INTO `fields` (
+                `creator_id`,
                 `name`,
                 `type_id`,
-                `display_name`
+                `display_name`,
+                `shared`
             ) VALUES (
+                ?,
                 ?,
                 ?,
                 ?,
@@ -121,11 +139,15 @@ public final class FieldController {
         try {
             preparedStatement = connection.prepareStatement(insertFieldStatement);
 
-            preparedStatement.setString(1, name);
+            preparedStatement.setString(1, creatorId);
 
-            preparedStatement.setString(2, typeId);
+            preparedStatement.setString(2, name);
 
-            preparedStatement.setString(3, displayName);
+            preparedStatement.setString(3, typeId);
+
+            preparedStatement.setString(4, displayName);
+
+            preparedStatement.setBoolean(5, sharedFlag);
 
             rowsChanged = preparedStatement.executeUpdate();
         } catch (SQLException e) {
