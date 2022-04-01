@@ -16,13 +16,29 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * A user details service of the Coffee4j application.
+ *
+ * @author Logan Kulinski, lbkulinski@gmail.com
+ * @version April 1, 2022
+ */
 public final class CustomUserDetailsService implements UserDetailsService {
+    /**
+     * The {@link Logger} of the {@link CustomUserDetailsService} class.
+     */
     private static final Logger LOGGER;
 
     static {
         LOGGER = LogManager.getLogger();
     } //static
 
+    /**
+     * Returns the {@link UserDetails} of the user with the specified username.
+     *
+     * @param username the username to be used in the operation
+     * @return the {@link UserDetails} of the user with the specified username
+     * @throws UsernameNotFoundException if a user with the specified username could not be found
+     */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Objects.requireNonNull(username, "the specified username is null");
