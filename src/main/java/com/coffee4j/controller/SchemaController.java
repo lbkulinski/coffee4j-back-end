@@ -188,22 +188,28 @@ public final class SchemaController {
 
         String sharedFlagString = Utilities.getParameter(parameters, sharedFlagKey, String.class);
 
-        Set<String> whereSubclauses = new HashSet<>();
+        Boolean sharedFlag = null;
+
+        if (sharedFlagString != null) {
+            sharedFlag = Boolean.parseBoolean(sharedFlagString);
+        } //end if
+
+        Set<String> whereSubclauses = new LinkedHashSet<>();
 
         List<Object> whereArguments = new ArrayList<>();
 
-        if (sharedFlagString == null) {
+        if ((sharedFlag == null) || !sharedFlag) {
             String subclause = "(`creator_id` = ?)";
 
             whereSubclauses.add(subclause);
 
             whereArguments.add(creatorId);
-        } else {
+        } //end if
+
+        if (sharedFlag != null) {
             String subclause = "(`shared` = ?)";
 
             whereSubclauses.add(subclause);
-
-            boolean sharedFlag = Boolean.parseBoolean(sharedFlagString);
 
             whereArguments.add(sharedFlag);
         } //end if
@@ -397,7 +403,7 @@ public final class SchemaController {
 
         Boolean defaultFlag = Utilities.getParameter(parameters, defaultFlagKey, Boolean.class);
 
-        Set<String> setStatements = new HashSet<>();
+        Set<String> setStatements = new LinkedHashSet<>();
 
         List<Object> arguments = new ArrayList<>();
 

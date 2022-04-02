@@ -247,22 +247,28 @@ public final class FieldController {
 
         String sharedFlagString = Utilities.getParameter(parameters, sharedFlagKey, String.class);
 
-        Set<String> whereSubclauses = new HashSet<>();
+        Boolean sharedFlag = null;
+
+        if (sharedFlagString != null) {
+            sharedFlag = Boolean.parseBoolean(sharedFlagString);
+        } //end if
+
+        Set<String> whereSubclauses = new LinkedHashSet<>();
 
         List<Object> whereArguments = new ArrayList<>();
 
-        if (sharedFlagString == null) {
-            String creatorIdSubclause = "(`creator_id` = ?)";
+        if ((sharedFlag == null) || !sharedFlag) {
+            String subclause = "(`creator_id` = ?)";
 
-            whereSubclauses.add(creatorIdSubclause);
+            whereSubclauses.add(subclause);
 
             whereArguments.add(creatorId);
-        } else {
-            String sharedFlagSubclause = "(`shared` = ?)";
+        } //end if
 
-            whereSubclauses.add(sharedFlagSubclause);
+        if (sharedFlag != null) {
+            String subclause = "(`shared` = ?)";
 
-            boolean sharedFlag = Boolean.parseBoolean(sharedFlagString);
+            whereSubclauses.add(subclause);
 
             whereArguments.add(sharedFlag);
         } //end if
@@ -486,7 +492,7 @@ public final class FieldController {
 
         String name = Utilities.getParameter(parameters, nameKey, String.class);
 
-        Set<String> setStatements = new HashSet<>();
+        Set<String> setStatements = new LinkedHashSet<>();
 
         List<Object> arguments = new ArrayList<>();
 

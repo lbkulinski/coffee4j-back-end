@@ -310,7 +310,7 @@ public final class UserController {
 
         String username = Utilities.getParameter(parameters, usernameKey, String.class);
 
-        Set<String> setStatements = new HashSet<>();
+        Set<String> setStatements = new LinkedHashSet<>();
 
         List<Object> arguments = new ArrayList<>();
 
