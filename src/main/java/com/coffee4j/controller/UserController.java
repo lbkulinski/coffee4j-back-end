@@ -58,8 +58,8 @@ public final class UserController {
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } else if (username.length() > MAX_USERNAME_LENGTH) {
-            String message = "A username cannot exceed %d characters".formatted(MAX_USERNAME_LENGTH);
+        } else if (username.length() > UserController.MAX_USERNAME_LENGTH) {
+            String message = "A username cannot exceed %d characters".formatted(UserController.MAX_USERNAME_LENGTH);
 
             Map<String, ?> errorMap = Map.of(
                 "success", false,
@@ -314,8 +314,8 @@ public final class UserController {
 
         List<Object> arguments = new ArrayList<>();
 
-        if ((username != null) && (username.length() > MAX_USERNAME_LENGTH)) {
-            String message = "A username cannot exceed %d characters".formatted(MAX_USERNAME_LENGTH);
+        if ((username != null) && (username.length() > UserController.MAX_USERNAME_LENGTH)) {
+            String message = "A username cannot exceed %d characters".formatted(UserController.MAX_USERNAME_LENGTH);
 
             Map<String, ?> errorMap = Map.of(
                 "success", false,
