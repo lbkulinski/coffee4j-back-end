@@ -1,24 +1,34 @@
 package com.coffee4j.controller;
 
-import com.coffee4j.Utilities;
-import com.coffee4j.security.User;
-import org.apache.logging.log4j.LogManager;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+import org.springframework.web.bind.annotation.RequestBody;
+import com.coffee4j.Utilities;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCrypt;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
-
-import java.sql.*;
-import java.util.*;
+import com.coffee4j.security.User;
+import java.sql.ResultSet;
+import java.util.List;
+import java.util.ArrayList;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 /**
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 1, 2022
+ * @version April 2, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -209,7 +219,7 @@ public final class UserController {
 
         ResultSet resultSet = null;
 
-        Map<String, ?> userData;
+        List<Map<String, ?>> userData = new ArrayList<>();
 
         try {
             preparedStatement = connection.prepareStatement(userQuery);
@@ -218,25 +228,18 @@ public final class UserController {
 
             resultSet = preparedStatement.executeQuery();
 
-            if (!resultSet.next()) {
-                String message = "A user with the ID \"%s\" could not be found".formatted(id);
+            while (resultSet.next()) {
+                int rowId = resultSet.getInt("id");
 
-                Map<String, ?> errorMap = Map.of(
-                    "success", false,
-                    "message", message
+                String rowUsername = resultSet.getString("username");
+
+                Map<String, ?> userDatum = Map.of(
+                    "id", rowId,
+                    "username", rowUsername
                 );
 
-                return new ResponseEntity<>(errorMap, HttpStatus.OK);
-            } //end if
-
-            int rowId = resultSet.getInt("id");
-
-            String rowUsername = resultSet.getString("username");
-
-            userData = Map.of(
-                "id", rowId,
-                "username", rowUsername
-            );
+                userData.add(userDatum);
+            } //end while
         } catch (SQLException e) {
             UserController.LOGGER.atError()
                                  .withThrowable(e)
@@ -278,12 +281,21 @@ public final class UserController {
             } //end if
         } //end try catch finally
 
-        Map<String, ?> successMap = Map.of(
-            "success", true,
-            "user", userData
-        );
+        Map<String, ?> responseMap;
 
-        return new ResponseEntity<>(successMap, HttpStatus.OK);
+        if (userData.isEmpty()) {
+            responseMap = Map.of(
+                "success", false,
+                "message", "The user's data could not be retrieved"
+            );
+        } else {
+            responseMap = Map.of(
+                "success", true,
+                "users", userData
+            );
+        } //end if
+
+        return new ResponseEntity<>(responseMap, HttpStatus.OK);
     } //read
 
     /**
@@ -310,7 +322,7 @@ public final class UserController {
 
         String username = Utilities.getParameter(parameters, usernameKey, String.class);
 
-        Set<String> setStatements = new LinkedHashSet<>();
+        List<String> setStatements = new ArrayList<>();
 
         List<Object> arguments = new ArrayList<>();
 
@@ -369,17 +381,15 @@ public final class UserController {
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end if
 
-        String updateUserStatementTemplate = """
-            UPDATE `users`
-            SET
-            %s
-            WHERE `id` = ?""";
-
         String setStatementsString = setStatements.stream()
                                                   .reduce("%s,\n%s"::formatted)
                                                   .get();
 
-        String updateUserStatement = updateUserStatementTemplate.formatted(setStatementsString);
+        String updateUserStatement = """
+            UPDATE `users`
+            SET
+            %s
+            WHERE `id` = ?""".formatted(setStatementsString);
 
         PreparedStatement preparedStatement = null;
 
@@ -433,7 +443,7 @@ public final class UserController {
         if (rowsChanged == 0) {
             responseMap = Map.of(
                 "success", false,
-                "message", "A user with the specified ID could not be found"
+                "message", "The user's data could not be updated"
             );
         } else {
             responseMap = Map.of(
@@ -525,7 +535,7 @@ public final class UserController {
         if (rowsChanged == 0) {
             responseMap = Map.of(
                 "success", false,
-                "message", "A user with the specified ID could not be found"
+                "message", "The user could not be deleted"
             );
         } else {
             responseMap = Map.of(
