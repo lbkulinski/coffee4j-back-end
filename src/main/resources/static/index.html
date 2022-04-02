@@ -10,13 +10,16 @@
 <script>
     $(function () {
         let data = {
-            "id": 2
+            "name": "coffee",
+            "type_id": 1,
+            "display_name": "Coffee",
+            "shared": true
         };
 
         let dataString = JSON.stringify(data);
 
         $.ajax({
-            "type": "DELETE",
+            "type": "POST",
             "url": "http://localhost:8080/api/fields",
             "contentType": "application/json",
             "data": dataString,

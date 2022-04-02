@@ -26,11 +26,18 @@ import java.util.*;
 @RequestMapping("api/fields")
 public final class FieldController {
     /**
+     * The maximum name length of the {@link FieldController} class.
+     */
+    private static final int MAX_NAME_LENGTH;
+
+    /**
      * The {@link Logger} of the {@link FieldController} class.
      */
     private static final Logger LOGGER;
 
     static {
+        MAX_NAME_LENGTH = 45;
+
         LOGGER = LogManager.getLogger();
     } //static
 
@@ -65,11 +72,20 @@ public final class FieldController {
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } else if (name.length() > FieldController.MAX_NAME_LENGTH) {
+            String message = "A name cannot exceed %d characters".formatted(FieldController.MAX_NAME_LENGTH);
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", message
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
 
         String typeIdKey = "type_id";
 
-        String typeId = Utilities.getParameter(parameters, typeIdKey, String.class);
+        Integer typeId = Utilities.getParameter(parameters, typeIdKey, Integer.class);
 
         if (typeId == null) {
             Map<String, ?> errorMap = Map.of(
@@ -88,6 +104,15 @@ public final class FieldController {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
                 "message", "A display name is required"
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } else if (displayName.length() > FieldController.MAX_NAME_LENGTH) {
+            String message = "A display name cannot exceed %d characters".formatted(FieldController.MAX_NAME_LENGTH);
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", message
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
@@ -143,7 +168,7 @@ public final class FieldController {
 
             preparedStatement.setString(2, name);
 
-            preparedStatement.setString(3, typeId);
+            preparedStatement.setInt(3, typeId);
 
             preparedStatement.setString(4, displayName);
 
@@ -465,7 +490,16 @@ public final class FieldController {
 
         List<Object> arguments = new ArrayList<>();
 
-        if (name != null) {
+        if ((name != null) && (name.length() > FieldController.MAX_NAME_LENGTH)) {
+            String message = "A name cannot exceed %d characters".formatted(FieldController.MAX_NAME_LENGTH);
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", message
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } else if (name != null) {
             String setStatement = "    `name` = ?";
 
             setStatements.add(setStatement);
@@ -489,7 +523,16 @@ public final class FieldController {
 
         String displayName = Utilities.getParameter(parameters, displayNameKey, String.class);
 
-        if (displayName != null) {
+        if ((displayName != null) && (displayName.length() > FieldController.MAX_NAME_LENGTH)) {
+            String message = "A display name cannot exceed %d characters".formatted(FieldController.MAX_NAME_LENGTH);
+
+            Map<String, ?> errorMap = Map.of(
+                "success", false,
+                "message", message
+            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+        } else if (displayName != null) {
             String setStatement = "    `display_name` = ?";
 
             setStatements.add(setStatement);
