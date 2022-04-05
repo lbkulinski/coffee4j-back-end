@@ -7,7 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.http.ResponseEntity;
 import java.util.Map;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import com.coffee4j.Utilities;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCrypt;
@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 2, 2022
+ * @version April 5, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -50,43 +50,21 @@ public final class UserController {
     } //static
 
     /**
-     * Attempts to create a new user using the specified parameters. A username and password are required for creation.
+     * Attempts to create a new user using the specified username and password. A username and password are required
+     * for creation.
      *
-     * @param parameters the parameters to be used in the operation
+     * @param username the username to be used in the operation
+     * @param password the password to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the create operation
      */
     @PostMapping
-    public ResponseEntity<Map<String, ?>> create(@RequestBody Map<String, Object> parameters) {
-        String usernameKey = "username";
-
-        String username = Utilities.getParameter(parameters, usernameKey, String.class);
-
-        if (username == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "A username is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } else if (username.length() > UserController.MAX_USERNAME_LENGTH) {
+    public ResponseEntity<Map<String, ?>> create(@RequestParam String username, @RequestParam String password) {
+        if (username.length() > UserController.MAX_USERNAME_LENGTH) {
             String message = "A username cannot exceed %d characters".formatted(UserController.MAX_USERNAME_LENGTH);
 
             Map<String, ?> errorMap = Map.of(
                 "success", false,
                 "message", message
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        String passwordKey = "password";
-
-        String password = Utilities.getParameter(parameters, passwordKey, String.class);
-
-        if (password == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "A password is required"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
@@ -299,14 +277,16 @@ public final class UserController {
     } //read
 
     /**
-     * Attempts to update the user data of the current logged-in user using the specified parameters. A user's username
-     * and password can be updated. At least one update is required.
+     * Attempts to update the user data of the current logged-in user using the specified username and password. A
+     * user's username and password can be updated. At least one update is required.
      *
-     * @param parameters the parameters to be used in the operation
+     * @param username the username to be used in the operation
+     * @param password the password to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
     @PutMapping
-    public ResponseEntity<Map<String, ?>> update(@RequestBody Map<String, Object> parameters) {
+    public ResponseEntity<Map<String, ?>> update(@RequestParam(required = false) String username,
+                                                 @RequestParam(required = false) String password) {
         Authentication authentication = SecurityContextHolder.getContext()
                                                              .getAuthentication();
 
@@ -317,10 +297,6 @@ public final class UserController {
         } //end if
 
         int id = user.id();
-
-        String usernameKey = "username";
-
-        String username = Utilities.getParameter(parameters, usernameKey, String.class);
 
         List<String> setStatements = new ArrayList<>();
 
@@ -342,10 +318,6 @@ public final class UserController {
 
             arguments.add(username);
         } //end if
-
-        String passwordKey = "password";
-
-        String password = Utilities.getParameter(parameters, passwordKey, String.class);
 
         if (password != null) {
             String setStatement = "    `password_hash` = ?";
@@ -448,7 +420,7 @@ public final class UserController {
         } else {
             responseMap = Map.of(
                 "success", true,
-                "message", "The user information was successfully updated"
+                "message", "The user's data was successfully updated"
             );
         } //end if
 
