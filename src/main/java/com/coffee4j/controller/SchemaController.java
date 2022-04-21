@@ -2,6 +2,7 @@ package com.coffee4j.controller;
 
 import com.coffee4j.Utilities;
 import com.coffee4j.security.User;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -13,16 +14,15 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.net.URI;
+import java.sql.*;
 import java.util.Map;
 
 /**
  * The REST controller used to interact with the Coffee4j schema data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 5, 2022
+ * @version April 20, 2022
  */
 @RestController
 @RequestMapping("api/schemas")
@@ -84,8 +84,12 @@ public final class SchemaController {
 
         int rowsChanged;
 
+        ResultSet resultSet = null;
+
+        int id;
+
         try {
-            preparedStatement = connection.prepareStatement(insertSchemaStatement);
+            preparedStatement = connection.prepareStatement(insertSchemaStatement, Statement.RETURN_GENERATED_KEYS);
 
             preparedStatement.setInt(1, creatorId);
 
@@ -94,6 +98,19 @@ public final class SchemaController {
             preparedStatement.setBoolean(3, sharedFlag);
 
             rowsChanged = preparedStatement.executeUpdate();
+
+            resultSet = preparedStatement.getGeneratedKeys();
+
+            if (!resultSet.next()) {
+                Map<String, ?> errorMap = Map.of(
+                    "success", false,
+                    "message", "The schema could not be created"
+                );
+
+                return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+            } //end if
+
+            id = resultSet.getInt(1);
         } catch (SQLException e) {
             SchemaController.LOGGER.atError()
                                    .withThrowable(e)
@@ -123,6 +140,16 @@ public final class SchemaController {
                                            .log();
                 } //end try catch
             } //end if
+
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    SchemaController.LOGGER.atError()
+                                           .withThrowable(e)
+                                           .log();
+                } //end try catch
+            } //end if
         } //end try catch finally
 
         Map<String, ?> responseMap;
@@ -139,6 +166,14 @@ public final class SchemaController {
             );
         } //end if
 
-        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+        String locationString = "http://localhost:8080/api/schemas?id=%d".formatted(id);
+
+        URI location = URI.create(locationString);
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+
+        httpHeaders.setLocation(location);
+
+        return new ResponseEntity<>(responseMap, httpHeaders, HttpStatus.CREATED);
     } //create
 }

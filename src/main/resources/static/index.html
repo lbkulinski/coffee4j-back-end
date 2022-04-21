@@ -10,19 +10,16 @@
 <script>
     $(function () {
         let data = {
-            "name": "coffee",
-            "type_id": 1,
-            "display_name": "Coffee",
-            "shared": true
+            "shared": true,
+            "default": true
         };
 
         let dataString = JSON.stringify(data);
 
         $.ajax({
             "type": "POST",
-            "url": "http://localhost:8080/api/fields",
-            "contentType": "application/json",
-            "data": dataString,
+            "url": "http://localhost:8080/api/schemas",
+            "data": data,
             "success": function (response) {
                 console.log(response)
             }

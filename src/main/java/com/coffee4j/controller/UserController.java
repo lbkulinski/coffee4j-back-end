@@ -8,17 +8,20 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.http.ResponseEntity;
 import java.util.Map;
 import org.springframework.web.bind.annotation.RequestParam;
-import com.coffee4j.Utilities;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import java.sql.Connection;
+import com.coffee4j.Utilities;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.sql.SQLException;
+import java.net.URI;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.coffee4j.security.User;
-import java.sql.ResultSet;
 import java.util.List;
 import java.util.ArrayList;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,7 +31,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 5, 2022
+ * @version April 20, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -98,14 +101,31 @@ public final class UserController {
 
         int rowsChanged;
 
+        ResultSet resultSet = null;
+
+        int id;
+
         try {
-            preparedStatement = connection.prepareStatement(insertUserStatement);
+            preparedStatement = connection.prepareStatement(insertUserStatement, Statement.RETURN_GENERATED_KEYS);
 
             preparedStatement.setString(1, username);
 
             preparedStatement.setString(2, passwordHash);
 
             rowsChanged = preparedStatement.executeUpdate();
+
+            resultSet = preparedStatement.getGeneratedKeys();
+
+            if (!resultSet.next()) {
+                Map<String, ?> errorMap = Map.of(
+                    "success", false,
+                    "message", "The user could not be created"
+                );
+
+                return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+            } //end if
+
+            id = resultSet.getInt(1);
         } catch (SQLException e) {
             UserController.LOGGER.atError()
                                  .withThrowable(e)
@@ -135,6 +155,16 @@ public final class UserController {
                                          .log();
                 } //end try catch
             } //end if
+
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    UserController.LOGGER.atError()
+                                         .withThrowable(e)
+                                         .log();
+                } //end try catch
+            } //end if
         } //end try catch finally
 
         Map<String, ?> responseMap;
@@ -151,7 +181,15 @@ public final class UserController {
             );
         } //end if
 
-        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+        String locationString = "http://localhost:8080/api/users?id=%d".formatted(id);
+
+        URI location = URI.create(locationString);
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+
+        httpHeaders.setLocation(location);
+
+        return new ResponseEntity<>(responseMap, httpHeaders, HttpStatus.CREATED);
     } //create
 
     /**
