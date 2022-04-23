@@ -1,29 +1,30 @@
 package com.coffee4j.controller;
 
+import static com.coffee4j.generated.tables.Users.USERS;
+import org.jooq.*;
+import org.jooq.Record;
+import org.jooq.impl.DSL;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.http.ResponseEntity;
-import java.util.Map;
+
+import java.sql.*;
+import java.util.*;
+
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCrypt;
-import java.sql.Connection;
 import com.coffee4j.Utilities;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.sql.SQLException;
+
 import java.net.URI;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.coffee4j.security.User;
-import java.util.List;
-import java.util.ArrayList;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 
@@ -37,12 +38,12 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 @RequestMapping("api/users")
 public final class UserController {
     /**
-     * The maximum username length of the {@link UserController} class.
+     * The maximum username length to be used in the {@link UserController} class.
      */
     private static final int MAX_USERNAME_LENGTH;
 
     /**
-     * The {@link Logger} of the {@link UserController} class.
+     * The {@link Logger} to be used in the {@link UserController} class.
      */
     private static final Logger LOGGER;
 
@@ -62,8 +63,8 @@ public final class UserController {
      */
     @PostMapping
     public ResponseEntity<Map<String, ?>> create(@RequestParam String username, @RequestParam String password) {
-        if (username.length() > UserController.MAX_USERNAME_LENGTH) {
-            String message = "A username cannot exceed %d characters".formatted(UserController.MAX_USERNAME_LENGTH);
+        if (username.length() > MAX_USERNAME_LENGTH) {
+            String message = "A username cannot exceed %d characters".formatted(MAX_USERNAME_LENGTH);
 
             Map<String, ?> errorMap = Map.of(
                 "success", false,
@@ -77,59 +78,25 @@ public final class UserController {
 
         String passwordHash = BCrypt.hashpw(password, salt);
 
-        Connection connection = Utilities.getConnection();
+        byte[] passwordHashBytes = passwordHash.getBytes();
 
-        if (connection == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "The user could not be created"
-            );
+        Integer id = null;
 
-            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } //end if
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-        String insertUserStatement = """
-            INSERT INTO `users` (
-                `username`,
-                `password_hash`
-            ) VALUES (
-                ?,
-                ?
-            )""";
+            Record record = context.insertInto(USERS, USERS.USERNAME, USERS.PASSWORD_HASH)
+                                   .values(username, passwordHashBytes)
+                                   .returningResult(USERS.ID)
+                                   .fetchOne();
 
-        PreparedStatement preparedStatement = null;
-
-        int rowsChanged;
-
-        ResultSet resultSet = null;
-
-        int id;
-
-        try {
-            preparedStatement = connection.prepareStatement(insertUserStatement, Statement.RETURN_GENERATED_KEYS);
-
-            preparedStatement.setString(1, username);
-
-            preparedStatement.setString(2, passwordHash);
-
-            rowsChanged = preparedStatement.executeUpdate();
-
-            resultSet = preparedStatement.getGeneratedKeys();
-
-            if (!resultSet.next()) {
-                Map<String, ?> errorMap = Map.of(
-                    "success", false,
-                    "message", "The user could not be created"
-                );
-
-                return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+            if (record != null) {
+                id = record.getValue(USERS.ID);
             } //end if
-
-            id = resultSet.getInt(1);
         } catch (SQLException e) {
-            UserController.LOGGER.atError()
-                                 .withThrowable(e)
-                                 .log();
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
 
             Map<String, ?> errorMap = Map.of(
                 "success", false,
@@ -137,49 +104,21 @@ public final class UserController {
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } finally {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                UserController.LOGGER.atError()
-                                     .withThrowable(e)
-                                     .log();
-            } //end try catch
+        } //end try catch
 
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException e) {
-                    UserController.LOGGER.atError()
-                                         .withThrowable(e)
-                                         .log();
-                } //end try catch
-            } //end if
-
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException e) {
-                    UserController.LOGGER.atError()
-                                         .withThrowable(e)
-                                         .log();
-                } //end try catch
-            } //end if
-        } //end try catch finally
-
-        Map<String, ?> responseMap;
-
-        if (rowsChanged == 0) {
-            responseMap = Map.of(
+        if (id == null) {
+            Map<String, ?> errorMap = Map.of(
                 "success", false,
                 "message", "The user could not be created"
             );
-        } else {
-            responseMap = Map.of(
-                "success", true,
-                "message", "The user was successfully created"
-            );
+
+            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
         } //end if
+
+        Map<String, ?> successMap = Map.of(
+            "success", true,
+            "message", "The user was successfully created"
+        );
 
         String locationString = "http://localhost:8080/api/users?id=%d".formatted(id);
 
@@ -189,7 +128,7 @@ public final class UserController {
 
         httpHeaders.setLocation(location);
 
-        return new ResponseEntity<>(responseMap, httpHeaders, HttpStatus.CREATED);
+        return new ResponseEntity<>(successMap, httpHeaders, HttpStatus.CREATED);
     } //create
 
     /**
@@ -209,57 +148,21 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Connection connection = Utilities.getConnection();
-
-        if (connection == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "The user's data could not be retrieved"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } //end if
-
-        String userQuery = """
-            SELECT
-                `id`,
-                `username`
-            FROM
-                `users`
-            WHERE
-                `id` = ?""";
-
-        PreparedStatement preparedStatement = null;
-
         int id = user.id();
 
-        ResultSet resultSet = null;
+        Result<? extends Record> result;
 
-        List<Map<String, ?>> userData = new ArrayList<>();
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-        try {
-            preparedStatement = connection.prepareStatement(userQuery);
-
-            preparedStatement.setInt(1, id);
-
-            resultSet = preparedStatement.executeQuery();
-
-            while (resultSet.next()) {
-                int rowId = resultSet.getInt("id");
-
-                String rowUsername = resultSet.getString("username");
-
-                Map<String, ?> userDatum = Map.of(
-                    "id", rowId,
-                    "username", rowUsername
-                );
-
-                userData.add(userDatum);
-            } //end while
+            result = context.select(USERS.ID, USERS.USERNAME)
+                            .from(USERS)
+                            .where(USERS.ID.eq(id))
+                            .fetch();
         } catch (SQLException e) {
-            UserController.LOGGER.atError()
-                                 .withThrowable(e)
-                                 .log();
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
 
             Map<String, ?> errorMap = Map.of(
                 "success", false,
@@ -267,35 +170,22 @@ public final class UserController {
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } finally {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                UserController.LOGGER.atError()
-                                     .withThrowable(e)
-                                     .log();
-            } //end try catch
+        } //end try catch
 
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException e) {
-                    UserController.LOGGER.atError()
-                                         .withThrowable(e)
-                                         .log();
-                } //end try catch
-            } //end if
+        Set<Map<String, ?>> userData = new HashSet<>();
 
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException e) {
-                    UserController.LOGGER.atError()
-                                         .withThrowable(e)
-                                         .log();
-                } //end try catch
-            } //end if
-        } //end try catch finally
+        for (Record record : result) {
+            int recordId = record.getValue(USERS.ID);
+
+            String recordUsername = record.getValue(USERS.USERNAME);
+
+            Map<String, ?> userDatum = Map.of(
+                "id", recordId,
+                "username", recordUsername
+            );
+
+            userData.add(userDatum);
+        } //end for
 
         Map<String, ?> responseMap;
 
@@ -334,136 +224,7 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        List<String> setStatements = new ArrayList<>();
-
-        List<Object> arguments = new ArrayList<>();
-
-        if ((username != null) && (username.length() > UserController.MAX_USERNAME_LENGTH)) {
-            String message = "A username cannot exceed %d characters".formatted(UserController.MAX_USERNAME_LENGTH);
-
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", message
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } else if (username != null) {
-            String setStatement = "    `username` = ?";
-
-            setStatements.add(setStatement);
-
-            arguments.add(username);
-        } //end if
-
-        if (password != null) {
-            String setStatement = "    `password_hash` = ?";
-
-            String salt = BCrypt.gensalt();
-
-            String passwordHash = BCrypt.hashpw(password, salt);
-
-            setStatements.add(setStatement);
-
-            arguments.add(passwordHash);
-        } //end if
-
-        int id = user.id();
-
-        arguments.add(id);
-
-        if (setStatements.isEmpty()) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "At lease one update is required"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
-        } //end if
-
-        Connection connection = Utilities.getConnection();
-
-        if (connection == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "The user's data could not be updated"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } //end if
-
-        String setStatementsString = setStatements.stream()
-                                                  .reduce("%s,\n%s"::formatted)
-                                                  .get();
-
-        String updateUserStatement = """
-            UPDATE `users`
-            SET
-            %s
-            WHERE
-                `id` = ?""".formatted(setStatementsString);
-
-        PreparedStatement preparedStatement = null;
-
-        int rowsChanged;
-
-        try {
-            preparedStatement = connection.prepareStatement(updateUserStatement);
-
-            for (int i = 0; i < arguments.size(); i++) {
-                int argumentIndex = i + 1;
-
-                Object argument = arguments.get(i);
-
-                preparedStatement.setObject(argumentIndex, argument);
-            } //end for
-
-            rowsChanged = preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            UserController.LOGGER.atError()
-                                 .withThrowable(e)
-                                 .log();
-
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "The user's data could not be updated"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } finally {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                UserController.LOGGER.atError()
-                                     .withThrowable(e)
-                                     .log();
-            } //end try catch
-
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException e) {
-                    UserController.LOGGER.atError()
-                                         .withThrowable(e)
-                                         .log();
-                } //end try catch
-            } //end if
-        } //end try catch finally
-
-        Map<String, ?> responseMap;
-
-        if (rowsChanged == 0) {
-            responseMap = Map.of(
-                "success", false,
-                "message", "The user's data could not be updated"
-            );
-        } else {
-            responseMap = Map.of(
-                "success", true,
-                "message", "The user's data was successfully updated"
-            );
-        } //end if
-
-        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+       return new ResponseEntity<>(HttpStatus.OK);
     } //update
 
     /**
@@ -482,79 +243,6 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Connection connection = Utilities.getConnection();
-
-        if (connection == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "The user could not be deleted"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } //end if
-
-        String deleteUserStatement = """
-            DELETE FROM `users`
-            WHERE
-                `id` = ?""";
-
-        PreparedStatement preparedStatement = null;
-
-        int id = user.id();
-
-        int rowsChanged;
-
-        try {
-            preparedStatement = connection.prepareStatement(deleteUserStatement);
-
-            preparedStatement.setInt(1, id);
-
-            rowsChanged = preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            UserController.LOGGER.atError()
-                                 .withThrowable(e)
-                                 .log();
-
-            Map<String, Object> errorMap = Map.of(
-                "success", false,
-                "message", "The user could not be deleted"
-            );
-
-            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
-        } finally {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                UserController.LOGGER.atError()
-                                     .withThrowable(e)
-                                     .log();
-            } //end try catch
-
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException e) {
-                    UserController.LOGGER.atError()
-                                         .withThrowable(e)
-                                         .log();
-                } //end try catch
-            } //end if
-        } //end try catch finally
-
-        Map<String, ?> responseMap;
-
-        if (rowsChanged == 0) {
-            responseMap = Map.of(
-                "success", false,
-                "message", "The user could not be deleted"
-            );
-        } else {
-            responseMap = Map.of(
-                "success", true,
-                "message", "The user was successfully deleted"
-            );
-        } //end if
-
-        return new ResponseEntity<>(responseMap, HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     } //delete
 }
