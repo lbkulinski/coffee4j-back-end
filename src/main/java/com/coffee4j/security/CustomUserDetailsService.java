@@ -1,26 +1,27 @@
 package com.coffee4j.security;
 
-import com.coffee4j.Utilities;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
+import org.jooq.Field;
+import org.jooq.impl.DSL;
+import org.jooq.Table;
+import org.jooq.Record;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import com.coffee4j.Utilities;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import java.sql.SQLException;
 
 /**
  * A user details service of the Coffee4j application.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 1, 2022
+ * @version April 23, 2022
  */
 public final class CustomUserDetailsService implements UserDetailsService {
     /**
@@ -43,86 +44,43 @@ public final class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Objects.requireNonNull(username, "the specified username is null");
 
-        Connection connection = Utilities.getConnection();
+        Field<Integer> idField = DSL.field("id", Integer.class);
 
-        if (connection == null) {
-            throw new IllegalStateException();
+        Field<String> usernameField = DSL.field("username", String.class);
+
+        Field<String> passwordHashField = DSL.field("password_hash", String.class);
+
+        Table<Record> usersTable = DSL.table("users");
+
+        Record record;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            record = context.select(idField, usernameField, passwordHashField)
+                            .from(usersTable)
+                            .where(usernameField.eq(username))
+                            .fetchOne();
+        } catch (SQLException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            throw new IllegalStateException(e);
+        } //end try catch
+
+        if (record == null) {
+            String message = "A user with the username \"%s\" could not be found".formatted(username);
+
+            throw new UsernameNotFoundException(message);
         } //end if
 
-        String userQuery = """
-            SELECT
-                `id`,
-                `username`,
-                `password_hash`
-            FROM
-                `users`
-            WHERE
-                `username` = ?""";
+        int recordId = record.getValue(idField);
 
-        PreparedStatement preparedStatement = null;
+        String recordUsername = record.getValue(usernameField);
 
-        ResultSet resultSet = null;
+        String recordPasswordHash = record.getValue(passwordHashField);
 
-        int rowId;
-
-        String rowUsername;
-
-        String rowPasswordHash;
-
-        try {
-            preparedStatement = connection.prepareStatement(userQuery);
-
-            preparedStatement.setString(1, username);
-
-            resultSet = preparedStatement.executeQuery();
-
-            if (!resultSet.next()) {
-                String message = "A user with the username \"%s\" could not be found".formatted(username);
-
-                throw new UsernameNotFoundException(message);
-            } //end if
-
-            rowId = resultSet.getInt("id");
-
-            rowUsername = resultSet.getString("username");
-
-            rowPasswordHash = resultSet.getString("password_hash");
-        } catch (SQLException e) {
-            CustomUserDetailsService.LOGGER.atError()
-                                           .withThrowable(e)
-                                           .log();
-
-            throw new IllegalStateException();
-        } finally {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                CustomUserDetailsService.LOGGER.atError()
-                                               .withThrowable(e)
-                                               .log();
-            } //end try catch
-
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException e) {
-                    CustomUserDetailsService.LOGGER.atError()
-                                                   .withThrowable(e)
-                                                   .log();
-                } //end try catch
-            } //end if
-
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException e) {
-                    CustomUserDetailsService.LOGGER.atError()
-                                                   .withThrowable(e)
-                                                   .log();
-                } //end try catch
-            } //end if
-        } //end try catch finally
-
-        return new User(rowId, rowUsername, rowPasswordHash);
+        return new User(recordId, recordUsername, recordPasswordHash);
     } //loadUserByUsername
 }
