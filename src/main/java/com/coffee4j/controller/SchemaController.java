@@ -7,12 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-import org.springframework.web.bind.annotation.PostMapping;
 
 import java.net.URI;
 import java.sql.*;
@@ -22,7 +19,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j schema data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 20, 2022
+ * @version April 22, 2022
  */
 @RestController
 @RequestMapping("api/schemas")
@@ -56,14 +53,12 @@ public final class SchemaController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        int creatorId = user.id();
-
         Connection connection = Utilities.getConnection();
 
         if (connection == null) {
             Map<String, ?> errorMap = Map.of(
                 "success", false,
-                "message", "The user could not be created"
+                "message", "The schema could not be created"
             );
 
             return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -81,6 +76,8 @@ public final class SchemaController {
             )""";
 
         PreparedStatement preparedStatement = null;
+
+        int creatorId = user.id();
 
         int rowsChanged;
 
