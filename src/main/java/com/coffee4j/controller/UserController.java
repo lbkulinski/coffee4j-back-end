@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 20, 2022
+ * @version April 22, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -209,8 +209,6 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        int id = user.id();
-
         Connection connection = Utilities.getConnection();
 
         if (connection == null) {
@@ -232,6 +230,8 @@ public final class UserController {
                 `id` = ?""";
 
         PreparedStatement preparedStatement = null;
+
+        int id = user.id();
 
         ResultSet resultSet = null;
 
@@ -334,8 +334,6 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        int id = user.id();
-
         List<String> setStatements = new ArrayList<>();
 
         List<Object> arguments = new ArrayList<>();
@@ -369,6 +367,8 @@ public final class UserController {
             arguments.add(passwordHash);
         } //end if
 
+        int id = user.id();
+
         arguments.add(id);
 
         if (setStatements.isEmpty()) {
@@ -399,7 +399,8 @@ public final class UserController {
             UPDATE `users`
             SET
             %s
-            WHERE `id` = ?""".formatted(setStatementsString);
+            WHERE
+                `id` = ?""".formatted(setStatementsString);
 
         PreparedStatement preparedStatement = null;
 
@@ -481,8 +482,6 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        int id = user.id();
-
         Connection connection = Utilities.getConnection();
 
         if (connection == null) {
@@ -500,6 +499,8 @@ public final class UserController {
                 `id` = ?""";
 
         PreparedStatement preparedStatement = null;
+
+        int id = user.id();
 
         int rowsChanged;
 
