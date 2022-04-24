@@ -181,12 +181,12 @@ public final class UserController {
 
         String recordUsername = record.getValue(usernameField);
 
-        Map<String, ?> userData = Map.of(
+        Map<String, ?> content = Map.of(
             "id", recordId,
             "username", recordUsername
         );
 
-        Body<Map<String, ?>> body = Body.success(userData);
+        Body<Map<String, ?>> body = Body.success(content);
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
