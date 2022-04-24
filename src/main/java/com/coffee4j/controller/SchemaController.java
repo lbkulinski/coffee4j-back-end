@@ -1,29 +1,47 @@
 package com.coffee4j.controller;
 
-import com.coffee4j.Body;
-import com.coffee4j.Utilities;
-import com.coffee4j.security.User;
-import org.apache.logging.log4j.LogManager;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.apache.logging.log4j.Logger;
-import org.jooq.*;
-import org.jooq.Record;
-import org.jooq.exception.DataAccessException;
-import org.jooq.impl.DSL;
-import org.jooq.impl.SQLDataType;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+import org.apache.logging.log4j.LogManager;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
+import com.coffee4j.Body;
+import org.springframework.web.bind.annotation.RequestParam;
+import com.coffee4j.security.User;
+import com.coffee4j.Utilities;
+import org.springframework.http.HttpStatus;
+import org.jooq.Table;
+import org.jooq.Record;
+import org.jooq.impl.DSL;
+import org.jooq.Field;
+import org.jooq.DataType;
+import org.jooq.impl.SQLDataType;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Map;
+import org.jooq.exception.DataAccessException;
+import java.net.URI;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.jooq.Condition;
 import java.util.Objects;
+import org.jooq.Result;
 import java.util.Set;
+import java.util.Map;
+import java.util.HashSet;
+import org.springframework.web.bind.annotation.PutMapping;
+import java.util.HashMap;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
+/**
+ * The REST controller used to interact with the Coffee4j schema data.
+ *
+ * @author Logan Kulinski, lbkulinski@gmail.com
+ * @version April 24, 2022
+ */
 @RestController
 @RequestMapping("api/schemas")
 public final class SchemaController {
@@ -32,6 +50,9 @@ public final class SchemaController {
      */
     private static final int MAX_NAME_LENGTH;
 
+    /**
+     * The {@link Logger} of the {@link SchemaController} class.
+     */
     private static final Logger LOGGER;
 
     static {
@@ -40,6 +61,15 @@ public final class SchemaController {
         LOGGER = LogManager.getLogger();
     } //static
 
+    /**
+     * Attempts to create a new schema for the current logged-in user. A name, default flag, and shared flag are
+     * required for creation.
+     *
+     * @param name the name to be used in the operation
+     * @param defaultFlag the default flag to be used in the operation
+     * @param sharedFlag the shared flag to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the create operation
+     */
     @PostMapping
     public ResponseEntity<Body<?>> create(@RequestParam String name, @RequestParam("default") boolean defaultFlag,
                                           @RequestParam("shared") boolean sharedFlag) {
@@ -127,6 +157,17 @@ public final class SchemaController {
         return new ResponseEntity<>(body, httpHeaders, HttpStatus.CREATED);
     } //create
 
+    /**
+     * Attempts to read the schema data of the current logged-in user. Assuming data exists, the ID, creator ID, name,
+     * default flag, and shared flag of each schema are returned.
+     *
+     * @param id the ID to be used in the operation
+     * @param creatorId the creator ID to be used in the operation
+     * @param name the name to be used in the operation
+     * @param defaultFlag the default flag to be used in the operation
+     * @param sharedFlag the shared flag to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the read operation
+     */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) Integer creatorId,
@@ -230,4 +271,156 @@ public final class SchemaController {
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
+
+    /**
+     * Attempts to update the schema data of the current logged-in user. A schema's name, default flag, and shared flag
+     * can be updated. An ID and at least one update are required.
+     *
+     * @param id the ID to be used in the operation
+     * @param name the name to be used in the operation
+     * @param defaultFlag the default flag to be used in the operation
+     * @param sharedFlag the shared flag to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the update operation
+     */
+    @PutMapping
+    public ResponseEntity<Body<?>> update(@RequestParam int id,
+                                          @RequestParam(required = false) String name,
+                                          @RequestParam(name = "default", required = false) Boolean defaultFlag,
+                                          @RequestParam(name = "shared", required = false) Boolean sharedFlag) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        Map<Field<?>, Object> fieldToNewValue = new HashMap<>();
+
+        if (name != null) {
+            Field<String> nameField = DSL.field("`name`", String.class);
+
+            fieldToNewValue.put(nameField, name);
+        } //end if
+
+        if (defaultFlag != null) {
+            Field<Boolean> defaultField = DSL.field("`default`", Boolean.class);
+
+            fieldToNewValue.put(defaultField, defaultFlag);
+        } //end if
+
+        if (sharedFlag != null) {
+            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
+
+            fieldToNewValue.put(sharedField, sharedFlag);
+        } //end if
+
+        if (fieldToNewValue.isEmpty()) {
+            String content = "At lease one update is required";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        Table<Record> schemasTable = DSL.table("`schemas`");
+
+        Field<Integer> idField = DSL.field("`id`", Integer.class);
+
+        Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+
+        int creatorId = user.id();
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            rowsChanged = context.update(schemasTable)
+                                 .set(fieldToNewValue)
+                                 .where(idField.eq(id))
+                                 .and(creatorIdField.eq(creatorId))
+                                 .execute();
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "The schema's data could not be updated";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "The schema's data could not be updated";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "The schema's data was successfully updated";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
+    } //update
+
+    /**
+     * Attempts to delete the schema data of the current logged-in user. An ID is required for deletion.
+     *
+     * @param id the ID to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
+    @DeleteMapping
+    public ResponseEntity<Body<?>> delete(@RequestParam int id) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        Table<Record> schemasTable = DSL.table("`schemas`");
+
+        Field<Integer> idField = DSL.field("`id`", Integer.class);
+
+        Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+
+        int creatorId = user.id();
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            rowsChanged = context.delete(schemasTable)
+                                 .where(idField.eq(id))
+                                 .and(creatorIdField.eq(creatorId))
+                                 .execute();
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "The schema's data could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "The schema's data could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "The schema's data was successfully deleted";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
+    } //delete
 }

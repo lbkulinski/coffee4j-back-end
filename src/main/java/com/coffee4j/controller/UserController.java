@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 23, 2022
+ * @version April 24, 2022
  */
 @RestController
 @RequestMapping("api/users")
@@ -56,8 +56,7 @@ public final class UserController {
     } //static
 
     /**
-     * Attempts to create a new user using the specified username and password. A username and password are required
-     * for creation.
+     * Attempts to create a new user. A username and password are required for creation.
      *
      * @param username the username to be used in the operation
      * @param password the password to be used in the operation
@@ -193,8 +192,8 @@ public final class UserController {
     } //read
 
     /**
-     * Attempts to update the user data of the current logged-in user using the specified username and password. A
-     * user's username and password can be updated. At least one update is required.
+     * Attempts to update the user data of the current logged-in user. A user's username and password can be updated.
+     * At least one update is required.
      *
      * @param username the username to be used in the operation
      * @param password the password to be used in the operation
@@ -227,6 +226,14 @@ public final class UserController {
             String passwordHash = BCrypt.hashpw(password, salt);
 
             fieldToNewValue.put(passwordHashField, passwordHash);
+        } //end if
+
+        if (fieldToNewValue.isEmpty()) {
+            String content = "At lease one update is required";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
         Field<Integer> idField = DSL.field("`id`", Integer.class);

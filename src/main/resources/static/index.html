@@ -10,12 +10,10 @@
 <script>
     $(function () {
         $.ajax({
-            "type": "POST",
+            "type": "DELETE",
             "url": "http://localhost:8080/api/schemas",
             "data": {
-                "name": "Test",
-                "default": true,
-                "shared": true
+                "id": 3
             },
             "success": function (body) {
                 console.log(body)
