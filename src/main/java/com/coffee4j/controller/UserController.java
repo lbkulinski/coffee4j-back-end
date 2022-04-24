@@ -1,5 +1,6 @@
 package com.coffee4j.controller;
 
+import com.coffee4j.Body;
 import com.coffee4j.Utilities;
 import com.coffee4j.security.User;
 import org.apache.logging.log4j.LogManager;
@@ -13,14 +14,13 @@ import org.jooq.impl.DSL;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -57,16 +57,13 @@ public final class UserController {
      * @return a {@link ResponseEntity} containing the outcome of the create operation
      */
     @PostMapping
-    public ResponseEntity<Map<String, ?>> create(@RequestParam String username, @RequestParam String password) {
+    public ResponseEntity<Body<?>> create(@RequestParam String username, @RequestParam String password) {
         if (username.length() > MAX_USERNAME_LENGTH) {
-            String message = "A username cannot exceed %d characters".formatted(MAX_USERNAME_LENGTH);
+            String content = "A username cannot exceed %d characters".formatted(MAX_USERNAME_LENGTH);
 
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", message
-            );
+            Body<String> body = Body.error(content);
 
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
         Table<Record> usersTable = DSL.table("users");
@@ -93,21 +90,19 @@ public final class UserController {
                   .withThrowable(e)
                   .log();
 
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "A user with the specified username and password could not be created"
-            );
+            String content = "A user with the specified username and password could not be created";
 
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end try catch
 
         if (rowsChanged == 0) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "A user with the specified username and password could not be created"
-            );
+            String content = "A user with the specified username and password could not be created";
 
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
         String locationString = "http://localhost:8080/api/users";
@@ -118,12 +113,11 @@ public final class UserController {
 
         httpHeaders.setLocation(location);
 
-        Map<String, ?> successMap = Map.of(
-            "success", true,
-            "message", "A user with the specified username and password was successfully created"
-        );
+        String content = "A user with the specified username and password was successfully created";
 
-        return new ResponseEntity<>(successMap, httpHeaders, HttpStatus.CREATED);
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, httpHeaders, HttpStatus.CREATED);
     } //create
 
     /**
@@ -133,13 +127,10 @@ public final class UserController {
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
-    public ResponseEntity<Map<String, ?>> read() {
-        Authentication authentication = SecurityContextHolder.getContext()
-                                                             .getAuthentication();
+    public ResponseEntity<Body<?>> read() {
+        User user = Utilities.getLoggedInUser();
 
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof User user)) {
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
@@ -165,21 +156,19 @@ public final class UserController {
                   .withThrowable(e)
                   .log();
 
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "The user's data could not be retrieved"
-            );
+            String content = "The user's data could not be retrieved";
 
-            return new ResponseEntity<>(errorMap, HttpStatus.INTERNAL_SERVER_ERROR);
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
         if (record == null) {
-            Map<String, ?> errorMap = Map.of(
-                "success", false,
-                "message", "The user's data could not be retrieved"
-            );
+            String content = "The user's data could not be retrieved";
 
-            return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
         int recordId = record.getValue(idField);
@@ -191,12 +180,9 @@ public final class UserController {
             "username", recordUsername
         );
 
-        Map<String, ?> successMap = Map.of(
-            "success", true,
-            "user", userData
-        );
+        Body<Map<String, ?>> body = Body.success(userData);
 
-        return new ResponseEntity<>(successMap, HttpStatus.OK);
+        return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
 
     /**
@@ -208,18 +194,72 @@ public final class UserController {
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
     @PutMapping
-    public ResponseEntity<Map<String, ?>> update(@RequestParam(required = false) String username,
-                                                 @RequestParam(required = false) String password) {
-        Authentication authentication = SecurityContextHolder.getContext()
-                                                             .getAuthentication();
+    public ResponseEntity<Body<?>> update(@RequestParam(required = false) String username,
+                                          @RequestParam(required = false) String password) {
+        User user = Utilities.getLoggedInUser();
 
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof User user)) {
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        Table<Record> usersTable = DSL.table("users");
+
+        Map<Field<String>, String> fieldToNewValue = new HashMap<>();
+
+        if (username != null) {
+            Field<String> usernameField = DSL.field("username", String.class);
+
+            fieldToNewValue.put(usernameField, username);
+        } //end if
+
+        if (password != null) {
+            Field<String> passwordHashField = DSL.field("password_hash", String.class);
+
+            String salt = BCrypt.gensalt();
+
+            String passwordHash = BCrypt.hashpw(password, salt);
+
+            fieldToNewValue.put(passwordHashField, passwordHash);
+        } //end if
+
+        Field<Integer> idField = DSL.field("id", Integer.class);
+
+        int id = user.id();
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            rowsChanged = context.update(usersTable)
+                                 .set(fieldToNewValue)
+                                 .where(idField.eq(id))
+                                 .execute();
+        } catch (SQLException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "The user's data could not be updated";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "The user's data could not be updated";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "The user's data was successfully updated";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
     } //update
 
     /**
@@ -228,16 +268,51 @@ public final class UserController {
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
      */
     @DeleteMapping
-    public ResponseEntity<Map<String, ?>> delete() {
-        Authentication authentication = SecurityContextHolder.getContext()
-                                                             .getAuthentication();
+    public ResponseEntity<Body<?>> delete() {
+        User user = Utilities.getLoggedInUser();
 
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof User user)) {
+        if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        Table<Record> usersTable = DSL.table("users");
+
+        Field<Integer> idField = DSL.field("id", Integer.class);
+
+        int id = user.id();
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            rowsChanged = context.delete(usersTable)
+                                 .where(idField.eq(id))
+                                 .execute();
+        } catch (SQLException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "The user's data could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "The user's data could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "The user's data was successfully deleted";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
     } //delete
 }

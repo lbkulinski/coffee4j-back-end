@@ -7,6 +7,9 @@ import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.util.Properties;
 import java.io.IOException;
+import com.coffee4j.security.User;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * A set of utilities used by the Coffee4j application.
@@ -62,4 +65,22 @@ public final class Utilities {
     private Utilities() throws InstantiationException {
         throw new InstantiationException("an instance of the Utilities class cannot be created");
     } //Utilities
+
+    /**
+     * Returns the current logged-in user or {@code null} if there is none
+     *
+     * @return the current logged-in user or {@code null} if there is none
+     */
+    public static User getLoggedInUser() {
+        Authentication authentication = SecurityContextHolder.getContext()
+                                                             .getAuthentication();
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof User user) {
+            return user;
+        } //end if
+
+        return null;
+    } //getLoggedInUser
 }

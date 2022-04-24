@@ -9,19 +9,11 @@
 <script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script>
     $(function () {
-        let data = {
-            "shared": true,
-            "default": true
-        };
-
-        let dataString = JSON.stringify(data);
-
         $.ajax({
-            "type": "POST",
-            "url": "http://localhost:8080/api/schemas",
-            "data": data,
-            "success": function (response) {
-                console.log(response)
+            "type": "DELETE",
+            "url": "http://localhost:8080/api/users",
+            "success": function (body) {
+                console.log(body)
             }
         });
     });
