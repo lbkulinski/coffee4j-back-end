@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.*;
 import org.jooq.Record;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.springframework.http.HttpHeaders;
@@ -58,15 +59,15 @@ public final class SchemaController {
 
         Table<Record> schemasTable = DSL.table("`schemas`");
 
+        Field<Boolean> defaultField = DSL.field("`default`", Boolean.class);
+
         Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+
+        int creatorId = user.id();
 
         Field<String> nameField = DSL.field("`name`", String.class);
 
-        Field<Boolean> defaultField = DSL.field("`default`", Boolean.class);
-
         Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
-
-        int creatorId = user.id();
 
         DataType<Integer> idType = SQLDataType.INTEGER.identity(true);
 
@@ -77,12 +78,19 @@ public final class SchemaController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
+            if (defaultFlag) {
+                context.update(schemasTable)
+                       .set(defaultField, false)
+                       .where(creatorIdField.eq(creatorId))
+                       .execute();
+            } //end if
+
             record = context.insertInto(schemasTable)
                             .columns(creatorIdField, nameField, defaultField, sharedField)
                             .values(creatorId, name, defaultFlag, sharedFlag)
                             .returning(idField)
                             .fetchOne();
-        } catch (SQLException e) {
+        } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
                   .log();
@@ -142,6 +150,10 @@ public final class SchemaController {
         if (Objects.equals(sharedFlag, Boolean.TRUE)) {
             condition = condition.and(sharedField.isTrue());
         } else {
+            if (Objects.equals(sharedFlag, Boolean.FALSE)) {
+                condition = condition.and(sharedField.isFalse());
+            } //end if
+
             int userId = user.id();
 
             condition = condition.and(creatorIdField.eq(userId));
@@ -178,7 +190,7 @@ public final class SchemaController {
                             .from(schemasTable)
                             .where(condition)
                             .fetch();
-        } catch (SQLException e) {
+        } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
                   .log();

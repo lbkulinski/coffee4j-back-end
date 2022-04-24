@@ -20,6 +20,7 @@ import com.coffee4j.Utilities;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import java.sql.SQLException;
+import org.jooq.exception.DataAccessException;
 import java.net.URI;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -91,7 +92,7 @@ public final class UserController {
                                  .columns(usernameField, passwordHashField)
                                  .values(username, passwordHash)
                                  .execute();
-        } catch (SQLException e) {
+        } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
                   .log();
@@ -157,7 +158,7 @@ public final class UserController {
                             .from(usersTable)
                             .where(idField.eq(id))
                             .fetchOne();
-        } catch (SQLException e) {
+        } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
                   .log();
@@ -241,7 +242,7 @@ public final class UserController {
                                  .set(fieldToNewValue)
                                  .where(idField.eq(id))
                                  .execute();
-        } catch (SQLException e) {
+        } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
                   .log();
@@ -295,7 +296,7 @@ public final class UserController {
             rowsChanged = context.delete(usersTable)
                                  .where(idField.eq(id))
                                  .execute();
-        } catch (SQLException e) {
+        } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
                   .log();

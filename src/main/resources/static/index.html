@@ -10,8 +10,13 @@
 <script>
     $(function () {
         $.ajax({
-            "type": "DELETE",
-            "url": "http://localhost:8080/api/users",
+            "type": "POST",
+            "url": "http://localhost:8080/api/schemas",
+            "data": {
+                "name": "Test",
+                "default": true,
+                "shared": true
+            },
             "success": function (body) {
                 console.log(body)
             }
