@@ -72,11 +72,11 @@ public final class UserController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        Table<Record> usersTable = DSL.table("users");
+        Table<Record> usersTable = DSL.table("`users`");
 
-        Field<String> usernameField = DSL.field("username", String.class);
+        Field<String> usernameField = DSL.field("`username`", String.class);
 
-        Field<String> passwordHashField = DSL.field("password_hash", String.class);
+        Field<String> passwordHashField = DSL.field("`password_hash`", String.class);
 
         String salt = BCrypt.gensalt();
 
@@ -96,7 +96,7 @@ public final class UserController {
                   .withThrowable(e)
                   .log();
 
-            String content = "A user with the specified username and password could not be created";
+            String content = "A user with the specified parameters could not be created";
 
             Body<String> body = Body.error(content);
 
@@ -104,7 +104,7 @@ public final class UserController {
         } //end try catch
 
         if (rowsChanged == 0) {
-            String content = "A user with the specified username and password could not be created";
+            String content = "A user with the specified parameters could not be created";
 
             Body<String> body = Body.error(content);
 
@@ -119,7 +119,7 @@ public final class UserController {
 
         httpHeaders.setLocation(location);
 
-        String content = "A user with the specified username and password was successfully created";
+        String content = "A user with the specified parameters was successfully created";
 
         Body<String> body = Body.success(content);
 
@@ -140,11 +140,11 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Field<Integer> idField = DSL.field("id", Integer.class);
+        Field<Integer> idField = DSL.field("`id`", Integer.class);
 
-        Field<String> usernameField = DSL.field("username", String.class);
+        Field<String> usernameField = DSL.field("`username`", String.class);
 
-        Table<Record> usersTable = DSL.table("users");
+        Table<Record> usersTable = DSL.table("`users`");
 
         int id = user.id();
 
@@ -208,18 +208,18 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Table<Record> usersTable = DSL.table("users");
+        Table<Record> usersTable = DSL.table("`users`");
 
         Map<Field<String>, String> fieldToNewValue = new HashMap<>();
 
         if (username != null) {
-            Field<String> usernameField = DSL.field("username", String.class);
+            Field<String> usernameField = DSL.field("`username`", String.class);
 
             fieldToNewValue.put(usernameField, username);
         } //end if
 
         if (password != null) {
-            Field<String> passwordHashField = DSL.field("password_hash", String.class);
+            Field<String> passwordHashField = DSL.field("`password_hash`", String.class);
 
             String salt = BCrypt.gensalt();
 
@@ -228,7 +228,7 @@ public final class UserController {
             fieldToNewValue.put(passwordHashField, passwordHash);
         } //end if
 
-        Field<Integer> idField = DSL.field("id", Integer.class);
+        Field<Integer> idField = DSL.field("`id`", Integer.class);
 
         int id = user.id();
 
@@ -281,9 +281,9 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Table<Record> usersTable = DSL.table("users");
+        Table<Record> usersTable = DSL.table("`users`");
 
-        Field<Integer> idField = DSL.field("id", Integer.class);
+        Field<Integer> idField = DSL.field("`id`", Integer.class);
 
         int id = user.id();
 
