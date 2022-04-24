@@ -1,27 +1,33 @@
 package com.coffee4j.controller;
 
-import com.coffee4j.Body;
-import com.coffee4j.Utilities;
-import com.coffee4j.security.User;
-import org.apache.logging.log4j.LogManager;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.apache.logging.log4j.Logger;
-import org.jooq.DSLContext;
-import org.jooq.Field;
-import org.jooq.Record;
-import org.jooq.SQLDialect;
-import org.jooq.Table;
-import org.jooq.impl.DSL;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+import org.apache.logging.log4j.LogManager;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.http.ResponseEntity;
+import com.coffee4j.Body;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.HttpStatus;
+import org.jooq.Table;
+import org.jooq.Record;
+import org.jooq.impl.DSL;
+import org.jooq.Field;
 import org.springframework.security.crypto.bcrypt.BCrypt;
-import org.springframework.web.bind.annotation.*;
-import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import com.coffee4j.Utilities;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
 import java.sql.SQLException;
-import java.util.HashMap;
+import java.net.URI;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.bind.annotation.GetMapping;
+import com.coffee4j.security.User;
 import java.util.Map;
+import org.springframework.web.bind.annotation.PutMapping;
+import java.util.HashMap;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 /**
  * The REST controller used to interact with the Coffee4j user data.
