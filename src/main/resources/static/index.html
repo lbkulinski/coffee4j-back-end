@@ -10,13 +10,21 @@
 <script>
     $(function () {
         $.ajax({
-            "type": "POST",
+            "type": "DELETE",
             "url": "http://localhost:8080/api/fields",
             "data": {
-                "name": "coffee_mass_g",
-                "typeId": 4,
-                "displayName": "Coffee Mass (g)",
-                "shared": false
+                "id": 3
+            },
+            "success": function (body) {
+                console.log(body)
+            }
+        });
+
+        $.ajax({
+            "type": "DELETE",
+            "url": "http://localhost:8080/api/fields",
+            "data": {
+                "id": 4
             },
             "success": function (body) {
                 console.log(body)
