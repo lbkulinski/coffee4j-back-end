@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.HashSet;
 import org.springframework.web.bind.annotation.PutMapping;
 import java.util.HashMap;
+import java.util.stream.Collectors;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 
 /**
@@ -182,41 +184,49 @@ public final class SchemaController {
 
         Condition condition = DSL.noCondition();
 
-        Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
+        if (sharedFlag == null) {
+            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
 
-        Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+            int userId = user.id();
 
-        if (Objects.equals(sharedFlag, Boolean.TRUE)) {
+            condition = condition.and(creatorIdField.eq(userId));
+        } else if (sharedFlag) {
+            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
+
             condition = condition.and(sharedField.isTrue());
         } else {
-            if (Objects.equals(sharedFlag, Boolean.FALSE)) {
-                condition = condition.and(sharedField.isFalse());
-            } //end if
+            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
+
+            condition = condition.and(sharedField.isFalse());
+
+            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
 
             int userId = user.id();
 
             condition = condition.and(creatorIdField.eq(userId));
         } //end if
 
-        Field<Integer> idField = DSL.field("`id`", Integer.class);
-
         if (id != null) {
+            Field<Integer> idField = DSL.field("`id`", Integer.class);
+
             condition = condition.and(idField.eq(id));
         } //end if
 
         if (creatorId != null) {
+            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+
             condition = condition.and(creatorIdField.eq(creatorId));
         } //end if
 
-        Field<String> nameField = DSL.field("`name`", String.class);
-
         if (name != null) {
+            Field<String> nameField = DSL.field("`name`", String.class);
+
             condition = condition.and(nameField.eq(name));
         } //end if
 
-        Field<Boolean> defaultField = DSL.field("`default`", Boolean.class);
-
         if (defaultFlag != null) {
+            Field<Boolean> defaultField = DSL.field("`default`", Boolean.class);
+
             condition = condition.and(defaultField.eq(defaultFlag));
         } //end if
 
@@ -227,7 +237,7 @@ public final class SchemaController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            result = context.select(idField, creatorIdField, nameField, defaultField, sharedField)
+            result = context.select()
                             .from(schemasTable)
                             .where(condition)
                             .fetch();
@@ -243,31 +253,11 @@ public final class SchemaController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
-        Set<Map<String, ?>> content = new HashSet<>();
+        Set<Map<String, Object>> content = result.stream()
+                                                 .map(Record::intoMap)
+                                                 .collect(Collectors.toUnmodifiableSet());
 
-        for (Record record : result) {
-            int recordId = record.get(idField);
-
-            int recordCreatorId = record.get(creatorIdField);
-
-            String recordName = record.get(nameField);
-
-            boolean recordDefault = record.get(defaultField);
-
-            boolean recordShared = record.get(sharedField);
-
-            Map<String, ?> schema = Map.of(
-                "id", recordId,
-                "creatorId", recordCreatorId,
-                "name", recordName,
-                "default", recordDefault,
-                "shared", recordShared
-            );
-
-            content.add(schema);
-        } //end for
-
-        Body<Set<Map<String, ?>>> body = Body.success(content);
+        Body<Set<Map<String, Object>>> body = Body.success(content);
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read

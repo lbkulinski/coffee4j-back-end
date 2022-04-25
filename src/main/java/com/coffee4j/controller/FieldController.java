@@ -19,6 +19,11 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/fields")
@@ -180,7 +185,71 @@ public final class FieldController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
+        Condition condition = DSL.noCondition();
+
+        if (sharedFlag == null) {
+            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+
+            int userId = user.id();
+
+            condition = condition.and(creatorIdField.eq(userId));
+        } else if (sharedFlag) {
+            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
+
+            condition = condition.and(sharedField.isTrue());
+        } else {
+            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
+
+            condition = condition.and(sharedField.isFalse());
+
+            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+
+            int userId = user.id();
+
+            condition = condition.and(creatorIdField.eq(userId));
+        } //end if
+
+        if (id != null) {
+            Field<Integer> idField = DSL.field("`id`", Integer.class);
+
+            condition = condition.and(idField.eq(id));
+        } //end if
+
+        if (creatorId != null) {
+            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+
+            condition = condition.and(creatorIdField.eq(creatorId));
+        } //end if
+
+        if (name != null) {
+            Field<String> nameField = DSL.field("`name`", String.class);
+
+            condition = condition.and(nameField.eq(name));
+        } //end if
+
+        if (typeId != null) {
+            Field<Integer> typeIdField = DSL.field("`type_id`", Integer.class);
+
+            condition = condition.and(typeIdField.eq(typeId));
+        } //end if
+
+        if (displayName != null) {
+            Field<String> displayNameField = DSL.field("`display_name`", String.class);
+
+            condition = condition.and(displayNameField.eq(displayName));
+        } //end if
+
+        Table<Record> fieldsTable = DSL.table("`fields`");
+
+        Result<Record> result;
+
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            result = context.select()
+                            .from(fieldsTable)
+                            .where(condition)
+                            .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
@@ -193,6 +262,12 @@ public final class FieldController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        Set<Map<String, Object>> content = result.stream()
+                                                 .map(Record::intoMap)
+                                                 .collect(Collectors.toUnmodifiableSet());
+
+        Body<Set<Map<String, Object>>> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
 }

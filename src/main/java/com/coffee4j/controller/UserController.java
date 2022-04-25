@@ -177,16 +177,9 @@ public final class UserController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        int recordId = record.get(idField);
+        Map<String, Object> content = record.intoMap();
 
-        String recordUsername = record.get(usernameField);
-
-        Map<String, ?> content = Map.of(
-            "id", recordId,
-            "username", recordUsername
-        );
-
-        Body<Map<String, ?>> body = Body.success(content);
+        Body<Map<String, Object>> body = Body.success(content);
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
