@@ -172,7 +172,7 @@ public final class SchemaController {
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(required = false) Integer creatorId,
+                                        @RequestParam(name = "creator_id", required = false) Integer creatorId,
                                         @RequestParam(required = false) String name,
                                         @RequestParam(name = "default", required = false) Boolean defaultFlag,
                                         @RequestParam(name = "shared", required = false) Boolean sharedFlag) {

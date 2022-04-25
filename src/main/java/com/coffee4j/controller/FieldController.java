@@ -74,8 +74,8 @@ public final class FieldController {
     } //checkTypeId
 
     @PostMapping
-    public ResponseEntity<Body<?>> create(@RequestParam String name, @RequestParam int typeId,
-                                          @RequestParam String displayName,
+    public ResponseEntity<Body<?>> create(@RequestParam String name, @RequestParam("type_id") int typeId,
+                                          @RequestParam("display_name") String displayName,
                                           @RequestParam("shared") boolean sharedFlag) {
         User user = Utilities.getLoggedInUser();
 
@@ -174,10 +174,10 @@ public final class FieldController {
 
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(required = false) Integer creatorId,
+                                        @RequestParam(name = "creator_id", required = false) Integer creatorId,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(required = false) Integer typeId,
-                                        @RequestParam(required = false) String displayName,
+                                        @RequestParam(name = "type_id", required = false) Integer typeId,
+                                        @RequestParam(name = "display_name", required = false) String displayName,
                                         @RequestParam(name = "shared", required = false) Boolean sharedFlag) {
         User user = Utilities.getLoggedInUser();
 
