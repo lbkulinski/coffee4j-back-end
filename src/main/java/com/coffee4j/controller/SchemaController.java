@@ -180,8 +180,6 @@ public final class SchemaController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Table<Record> schemasTable = DSL.table("`schemas`");
-
         Condition condition = DSL.noCondition();
 
         Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
@@ -221,6 +219,8 @@ public final class SchemaController {
         if (defaultFlag != null) {
             condition = condition.and(defaultField.eq(defaultFlag));
         } //end if
+
+        Table<Record> schemasTable = DSL.table("`schemas`");
 
         Result<? extends Record> result;
 

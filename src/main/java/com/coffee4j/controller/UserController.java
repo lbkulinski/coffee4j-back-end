@@ -208,8 +208,6 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Table<Record> usersTable = DSL.table("`users`");
-
         Map<Field<String>, String> fieldToNewValue = new HashMap<>();
 
         if (username != null) {
@@ -235,6 +233,8 @@ public final class UserController {
 
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
+
+        Table<Record> usersTable = DSL.table("`users`");
 
         Field<Integer> idField = DSL.field("`id`", Integer.class);
 
