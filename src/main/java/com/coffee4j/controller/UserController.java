@@ -100,7 +100,7 @@ public final class UserController {
 
             Body<String> body = Body.error(content);
 
-            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
         if (rowsChanged == 0) {
@@ -111,6 +111,10 @@ public final class UserController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
+        String content = "A user with the specified parameters was successfully created";
+
+        Body<String> body = Body.success(content);
+
         String locationString = "http://localhost:8080/api/users";
 
         URI location = URI.create(locationString);
@@ -118,10 +122,6 @@ public final class UserController {
         HttpHeaders httpHeaders = new HttpHeaders();
 
         httpHeaders.setLocation(location);
-
-        String content = "A user with the specified parameters was successfully created";
-
-        Body<String> body = Body.success(content);
 
         return new ResponseEntity<>(body, httpHeaders, HttpStatus.CREATED);
     } //create
@@ -177,9 +177,9 @@ public final class UserController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        int recordId = record.getValue(idField);
+        int recordId = record.get(idField);
 
-        String recordUsername = record.getValue(usernameField);
+        String recordUsername = record.get(usernameField);
 
         Map<String, ?> content = Map.of(
             "id", recordId,

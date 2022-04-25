@@ -129,7 +129,7 @@ public final class SchemaController {
 
             Body<String> body = Body.error(content);
 
-            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
         if (record == null) {
@@ -140,7 +140,11 @@ public final class SchemaController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        int recordId = record.getValue(idField, Integer.class);
+        String content = "A schema with the specified parameters was successfully created";
+
+        Body<String> body = Body.success(content);
+
+        int recordId = record.get(idField, Integer.class);
 
         String locationString = "http://localhost:8080/api/schemas?id=%d".formatted(recordId);
 
@@ -149,10 +153,6 @@ public final class SchemaController {
         HttpHeaders httpHeaders = new HttpHeaders();
 
         httpHeaders.setLocation(location);
-
-        String content = "A schema with the specified parameters was successfully created";
-
-        Body<String> body = Body.success(content);
 
         return new ResponseEntity<>(body, httpHeaders, HttpStatus.CREATED);
     } //create
@@ -246,15 +246,15 @@ public final class SchemaController {
         Set<Map<String, ?>> content = new HashSet<>();
 
         for (Record record : result) {
-            int recordId = record.getValue(idField);
+            int recordId = record.get(idField);
 
-            int recordCreatorId = record.getValue(creatorIdField);
+            int recordCreatorId = record.get(creatorIdField);
 
-            String recordName = record.getValue(nameField);
+            String recordName = record.get(nameField);
 
-            boolean recordDefault = record.getValue(defaultField);
+            boolean recordDefault = record.get(defaultField);
 
-            boolean recordShared = record.getValue(sharedField);
+            boolean recordShared = record.get(sharedField);
 
             Map<String, ?> schema = Map.of(
                 "id", recordId,
