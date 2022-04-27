@@ -8,28 +8,39 @@
 </body>
 <script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script>
-    $(function () {
+    function createField(name, displayName, typeId) {
         $.ajax({
-            "type": "DELETE",
+            "type": "POST",
             "url": "http://localhost:8080/api/fields",
             "data": {
-                "id": 3
+                "creator_id": 1,
+                "schema_id": 1,
+                "name": name,
+                "display_name": displayName,
+                "type_id": typeId
             },
             "success": function (body) {
                 console.log(body)
             }
         });
+    } //createField
 
-        $.ajax({
-            "type": "DELETE",
-            "url": "http://localhost:8080/api/fields",
-            "data": {
-                "id": 4
-            },
-            "success": function (body) {
-                console.log(body)
-            }
-        });
+    $(function () {
+        createField("date", "Date", 2);
+
+        createField("coffee", "Coffee", 1);
+
+        createField("water", "Water", 1);
+
+        createField("brewer", "Brewer", 1);
+
+        createField("filter", "Filter", 1);
+
+        createField("vessel", "Vessel", 1);
+
+        createField("coffee_mass_g", "Coffee Mass (g)", 4);
+
+        createField("water_mass_g", "Water Mass (g)", 4);
     });
 </script>
 </html>

@@ -37,6 +37,11 @@ import java.util.stream.Collectors;
 @RequestMapping("api/fields")
 public final class FieldController {
     /**
+     * The {@code schemas} table of the {@link FieldController} class.
+     */
+    private static final Schemas SCHEMAS;
+
+    /**
      * The {@code fields} table of the {@link FieldController} class.
      */
     private static final Fields FIELDS;
@@ -52,6 +57,8 @@ public final class FieldController {
     private static final Logger LOGGER;
 
     static {
+        SCHEMAS = Schemas.SCHEMAS;
+
         FIELDS = Fields.FIELDS;
 
         MAX_NAME_LENGTH = 45;
@@ -60,20 +67,23 @@ public final class FieldController {
     } //static
 
     /**
-     * Returns whether the specified schema ID is invalid.
+     * Returns whether a schema with the specified schema ID and creator ID does not exist.
      *
      * @param schemaId the schema ID to be used in the operation
-     * @return {@code true}, if the specified schema ID is invalid and {@code false} otherwise
+     * @param creatorId the creator ID to be used in the operation
+     * @return {@code true}, if a schema with the specified schema ID and creator ID does not exist and {@code false}
+     * otherwise
      */
-    private boolean schemaIdInvalid(int schemaId) {
+    private boolean checkSchema(int schemaId, int creatorId) {
         Record record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
             record = context.selectCount()
-                            .from(Schemas.SCHEMAS)
-                            .where(Schemas.SCHEMAS.ID.eq(schemaId))
+                            .from(SCHEMAS)
+                            .where(SCHEMAS.ID.eq(schemaId))
+                            .and(SCHEMAS.CREATOR_ID.eq(creatorId))
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
             return true;
@@ -94,7 +104,7 @@ public final class FieldController {
      * @param typeId the type ID to be used in the operation
      * @return {@code true}, if the specified type ID is invalid and {@code false} otherwise
      */
-    private boolean typeIdInvalid(int typeId) {
+    private boolean checkTypeId(int typeId) {
         Record record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
@@ -117,7 +127,7 @@ public final class FieldController {
         int count = record.get(0, Integer.class);
 
         return count == 0;
-    } //typeIdInvalid
+    } //checkTypeId
 
     /**
      * Attempts to create a new field for the current logged-in user. A schema ID, name, display name, and type ID are
@@ -139,8 +149,10 @@ public final class FieldController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        if (this.schemaIdInvalid(schemaId)) {
-            String content = "%d is not a valid schema ID".formatted(schemaId);
+        int creatorId = user.id();
+
+        if (this.checkSchema(schemaId, creatorId)) {
+            String content = "The schema ID %d is not associated with the current logged-in user".formatted(schemaId);
 
             Body<String> body = Body.error(content);
 
@@ -157,7 +169,7 @@ public final class FieldController {
             Body<String> body = Body.error(content);
 
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-        }  else if (this.typeIdInvalid(typeId)) {
+        }  else if (this.checkTypeId(typeId)) {
             String content = "%d is not a valid type ID".formatted(typeId);
 
             Body<String> body = Body.error(content);
@@ -165,17 +177,14 @@ public final class FieldController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        int creatorId = user.id();
-
         Record record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
             record = context.insertInto(FIELDS)
-                            .columns(FIELDS.CREATOR_ID, FIELDS.SCHEMA_ID, FIELDS.NAME, FIELDS.DISPLAY_NAME,
-                                     FIELDS.TYPE_ID)
-                            .values(creatorId, schemaId, name, displayName, typeId)
+                            .columns(FIELDS.SCHEMA_ID, FIELDS.NAME, FIELDS.DISPLAY_NAME, FIELDS.TYPE_ID)
+                            .values(schemaId, name, displayName, typeId)
                             .returning(FIELDS.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
@@ -239,7 +248,7 @@ public final class FieldController {
 
         int creatorId = user.id();
 
-        Condition condition = FIELDS.CREATOR_ID.eq(creatorId);
+        Condition condition = SCHEMAS.CREATOR_ID.eq(creatorId);
 
         if (id != null) {
             condition = condition.and(FIELDS.ID.eq(id));
@@ -266,8 +275,10 @@ public final class FieldController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            result = context.select()
-                            .from(FIELDS)
+            result = context.select(FIELDS.asterisk())
+                            .from(SCHEMAS)
+                            .innerJoin(FIELDS)
+                            .on(SCHEMAS.ID.eq(FIELDS.SCHEMA_ID))
                             .where(condition)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
@@ -292,40 +303,10 @@ public final class FieldController {
     } //read
 
     /**
-     * Returns whether the specified creator ID is invalid.
-     *
-     * @param creatorId the schema ID to be used in the operation
-     * @return {@code true}, if the specified creator ID is invalid and {@code false} otherwise
-     */
-    private boolean creatorIdInvalid(int creatorId) {
-        Record record;
-
-        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
-
-            record = context.selectCount()
-                            .from(Users.USERS)
-                            .where(Users.USERS.ID.eq(creatorId))
-                            .fetchOne();
-        } catch (SQLException | DataAccessException e) {
-            return true;
-        } //end try catch
-
-        if (record == null) {
-            return true;
-        } //end if
-
-        int count = record.get(0, Integer.class);
-
-        return count == 0;
-    } //creatorIdInvalid
-
-    /**
-     * Attempts to update the field data of the current logged-in user. A field's creator ID, schema ID, name, display
-     * name, and type ID can be updated. An ID and at least one update are required.
+     * Attempts to update the field data of the current logged-in user. A field's schema ID, name, display name, and
+     * type ID can be updated. An ID and at least one update are required.
      *
      * @param id the ID to be used in the operation
-     * @param creatorId the creator ID to be used in the operation
      * @param schemaId the schema ID to be used in the operation
      * @param name the name to be used in the operation
      * @param displayName the display name to be used in the operation
@@ -334,7 +315,6 @@ public final class FieldController {
      */
     @PutMapping
     public ResponseEntity<Body<?>> update(@RequestParam int id,
-                                          @RequestParam(name = "creator_id", required = false) Integer creatorId,
                                           @RequestParam(name = "schema_id", required = false) Integer schemaId,
                                           @RequestParam(required = false) String name,
                                           @RequestParam(name = "display_name", required = false) String displayName,
@@ -345,14 +325,10 @@ public final class FieldController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        if ((creatorId != null) && this.creatorIdInvalid(creatorId)) {
-            String content = "%d is not a valid creator ID".formatted(creatorId);
+        int creatorId = user.id();
 
-            Body<String> body = Body.error(content);
-
-            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-        } else if ((schemaId != null) && this.schemaIdInvalid(schemaId)) {
-            String content = "%d is not a valid schema ID".formatted(schemaId);
+        if ((schemaId != null) && this.checkSchema(schemaId, creatorId)) {
+            String content = "The schema ID %d is not associated with the current logged-in user".formatted(schemaId);
 
             Body<String> body = Body.error(content);
 
@@ -369,7 +345,7 @@ public final class FieldController {
             Body<String> body = Body.error(content);
 
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-        } else if ((typeId != null) && this.typeIdInvalid(typeId)) {
+        } else if ((typeId != null) && this.checkTypeId(typeId)) {
             String content = "%d is not a valid type ID".formatted(typeId);
 
             Body<String> body = Body.error(content);
@@ -378,10 +354,6 @@ public final class FieldController {
         } //end if
 
         Map<Field<?>, Object> fieldToNewValue = new HashMap<>();
-
-        if (creatorId != null) {
-            fieldToNewValue.put(FIELDS.CREATOR_ID, creatorId);
-        } //end if
 
         if (schemaId != null) {
             fieldToNewValue.put(FIELDS.SCHEMA_ID, schemaId);
@@ -417,7 +389,6 @@ public final class FieldController {
             rowsChanged = context.update(FIELDS)
                                  .set(fieldToNewValue)
                                  .where(FIELDS.ID.eq(id))
-                                 .and(FIELDS.CREATOR_ID.eq(userId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -469,7 +440,7 @@ public final class FieldController {
 
             rowsChanged = context.delete(FIELDS)
                                  .where(FIELDS.ID.eq(id))
-                                 .and(FIELDS.CREATOR_ID.eq(creatorId))
+                                 //.and(FIELDS.CREATOR_ID.eq(creatorId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
