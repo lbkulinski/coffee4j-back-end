@@ -1,49 +1,45 @@
 package com.coffee4j.controller;
 
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.apache.logging.log4j.Logger;
+import com.coffee4j.Body;
+import com.coffee4j.Utilities;
+import com.coffee4j.security.User;
 import org.apache.logging.log4j.LogManager;
-import org.jooq.Table;
+import org.apache.logging.log4j.Logger;
 import org.jooq.Record;
+import org.jooq.*;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
-import org.jooq.Field;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import schema.generated.tables.FieldTypes;
+import schema.generated.tables.Fields;
+
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import com.coffee4j.Utilities;
-import org.jooq.DSLContext;
-import org.jooq.SQLDialect;
 import java.sql.SQLException;
-import org.jooq.exception.DataAccessException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.http.ResponseEntity;
-import com.coffee4j.Body;
-import org.springframework.web.bind.annotation.RequestParam;
-import com.coffee4j.security.User;
-import org.springframework.http.HttpStatus;
-import org.jooq.DataType;
-import org.jooq.impl.SQLDataType;
-import java.net.URI;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.jooq.Condition;
-import org.jooq.Result;
-import java.util.Set;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.springframework.web.bind.annotation.PutMapping;
 import java.util.HashMap;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The REST controller used to interact with the Coffee4j field data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 24, 2022
+ * @version April 26, 2022
  */
 @RestController
 @RequestMapping("api/fields")
 public final class FieldController {
+    /**
+     * The {@code fields} table of the {@link FieldController} class.
+     */
+    private static final Fields FIELDS;
+
     /**
      * The maximum name length of the {@link FieldController} class.
      */
@@ -55,6 +51,8 @@ public final class FieldController {
     private static final Logger LOGGER;
 
     static {
+        FIELDS = Fields.FIELDS;
+
         MAX_NAME_LENGTH = 45;
 
         LOGGER = LogManager.getLogger();
@@ -67,18 +65,14 @@ public final class FieldController {
      * @return {@code true}, if the specified type ID is invalid and {@code false} otherwise
      */
     private boolean typeIdInvalid(int typeId) {
-        Table<Record> fieldTypesTable = DSL.table("`field_types`");
-
-        Field<Integer> idField = DSL.field("`id`", Integer.class);
-
         Record record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
             record = context.selectCount()
-                            .from(fieldTypesTable)
-                            .where(idField.eq(typeId))
+                            .from(FieldTypes.FIELD_TYPES)
+                            .where(FieldTypes.FIELD_TYPES.ID.eq(typeId))
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError().withThrowable(e).log();
@@ -135,33 +129,18 @@ public final class FieldController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        Table<Record> fieldsTable = DSL.table("`fields`");
-
-        Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
-        Field<String> nameField = DSL.field("`name`", String.class);
-
-        Field<Integer> typeIdField = DSL.field("`type_id`", Integer.class);
-
-        Field<String> displayNameField = DSL.field("`display_name`", String.class);
-
-        Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
-
         int creatorId = user.id();
-
-        DataType<Integer> idType = SQLDataType.INTEGER.identity(true);
-
-        Field<Integer> idField = DSL.field("`id`", idType);
 
         Record record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            record = context.insertInto(fieldsTable)
-                            .columns(creatorIdField, nameField, typeIdField, displayNameField, sharedField)
+            record = context.insertInto(FIELDS)
+                            .columns(FIELDS.CREATOR_ID, FIELDS.NAME, FIELDS.TYPE_ID, FIELDS.DISPLAY_NAME,
+                                     FIELDS.SHARED)
                             .values(creatorId, name, typeId, displayName, sharedFlag)
-                            .returning(idField)
+                            .returning(FIELDS.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -187,7 +166,7 @@ public final class FieldController {
 
         Body<String> body = Body.success(content);
 
-        int id = record.get(idField);
+        int id = record.get(FIELDS.ID);
 
         String locationString = "http://localhost:8080/api/fields?id=%d".formatted(id);
 
@@ -227,59 +206,37 @@ public final class FieldController {
 
         Condition condition = DSL.noCondition();
 
-        if (sharedFlag == null) {
-            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
-            int userId = user.id();
-
-            condition = condition.and(creatorIdField.eq(userId));
-        } else if (sharedFlag) {
-            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
-
-            condition = condition.and(sharedField.isTrue());
+        if (Objects.equals(sharedFlag, Boolean.TRUE)) {
+            condition = condition.and(FIELDS.SHARED.isTrue());
         } else {
-            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
-
-            condition = condition.and(sharedField.isFalse());
-
-            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+            if (Objects.equals(sharedFlag, Boolean.FALSE)) {
+                condition = condition.and(FIELDS.SHARED.isFalse());
+            } //end if
 
             int userId = user.id();
 
-            condition = condition.and(creatorIdField.eq(userId));
+            condition = condition.and(FIELDS.CREATOR_ID.eq(userId));
         } //end if
 
         if (id != null) {
-            Field<Integer> idField = DSL.field("`id`", Integer.class);
-
-            condition = condition.and(idField.eq(id));
+            condition = condition.and(FIELDS.ID.eq(id));
         } //end if
 
         if (creatorId != null) {
-            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
-            condition = condition.and(creatorIdField.eq(creatorId));
+            condition = condition.and(FIELDS.CREATOR_ID.eq(creatorId));
         } //end if
 
         if (name != null) {
-            Field<String> nameField = DSL.field("`name`", String.class);
-
-            condition = condition.and(nameField.eq(name));
+            condition = condition.and(FIELDS.NAME.eq(name));
         } //end if
 
         if (typeId != null) {
-            Field<Integer> typeIdField = DSL.field("`type_id`", Integer.class);
-
-            condition = condition.and(typeIdField.eq(typeId));
+            condition = condition.and(FIELDS.TYPE_ID.eq(typeId));
         } //end if
 
         if (displayName != null) {
-            Field<String> displayNameField = DSL.field("`display_name`", String.class);
-
-            condition = condition.and(displayNameField.eq(displayName));
+            condition = condition.and(FIELDS.DISPLAY_NAME.eq(displayName));
         } //end if
-
-        Table<Record> fieldsTable = DSL.table("`fields`");
 
         Result<Record> result;
 
@@ -287,7 +244,7 @@ public final class FieldController {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
             result = context.select()
-                            .from(fieldsTable)
+                            .from(FIELDS)
                             .where(condition)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
@@ -356,27 +313,19 @@ public final class FieldController {
         Map<Field<?>, Object> fieldToNewValue = new HashMap<>();
 
         if (name != null) {
-            Field<String> nameField = DSL.field("`name`", String.class);
-
-            fieldToNewValue.put(nameField, name);
+            fieldToNewValue.put(FIELDS.NAME, name);
         } //end if
 
         if (typeId != null) {
-            Field<Integer> typeIdField = DSL.field("`type_id`", Integer.class);
-
-            fieldToNewValue.put(typeIdField, typeId);
+            fieldToNewValue.put(FIELDS.TYPE_ID, typeId);
         } //end if
 
         if (displayName != null) {
-            Field<String> displayNameField = DSL.field("`display_name`", String.class);
-
-            fieldToNewValue.put(displayNameField, displayName);
+            fieldToNewValue.put(FIELDS.DISPLAY_NAME, displayName);
         } //end if
 
         if (sharedFlag != null) {
-            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
-
-            fieldToNewValue.put(sharedField, sharedFlag);
+            fieldToNewValue.put(FIELDS.SHARED, sharedFlag);
         } //end if
 
         if (fieldToNewValue.isEmpty()) {
@@ -387,12 +336,6 @@ public final class FieldController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        Table<Record> fieldsTable = DSL.table("`fields`");
-
-        Field<Integer> idField = DSL.field("`id`", Integer.class);
-
-        Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
         int creatorId = user.id();
 
         int rowsChanged;
@@ -400,10 +343,10 @@ public final class FieldController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.update(fieldsTable)
+            rowsChanged = context.update(FIELDS)
                                  .set(fieldToNewValue)
-                                 .where(idField.eq(id))
-                                 .and(creatorIdField.eq(creatorId))
+                                 .where(FIELDS.ID.eq(id))
+                                 .and(FIELDS.CREATOR_ID.eq(creatorId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -446,12 +389,6 @@ public final class FieldController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Table<Record> fieldsTable = DSL.table("`fields`");
-
-        Field<Integer> idField = DSL.field("`id`", Integer.class);
-
-        Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
         int creatorId = user.id();
 
         int rowsChanged;
@@ -459,9 +396,9 @@ public final class FieldController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.delete(fieldsTable)
-                                 .where(idField.eq(id))
-                                 .and(creatorIdField.eq(creatorId))
+            rowsChanged = context.delete(FIELDS)
+                                 .where(FIELDS.ID.eq(id))
+                                 .and(FIELDS.CREATOR_ID.eq(creatorId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()

@@ -21,6 +21,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -163,14 +164,12 @@ public final class SchemaController {
 
         Condition condition = DSL.noCondition();
 
-        if (sharedFlag == null) {
-            int userId = user.id();
-
-            condition = condition.and(SCHEMAS.CREATOR_ID.eq(userId));
-        } else if (sharedFlag) {
+        if (Objects.equals(sharedFlag, Boolean.TRUE)) {
             condition = condition.and(SCHEMAS.SHARED.isTrue());
         } else {
-            condition = condition.and(SCHEMAS.SHARED.isFalse());
+            if (Objects.equals(sharedFlag, Boolean.FALSE)) {
+                condition = condition.and(SCHEMAS.SHARED.isFalse());
+            } //end if
 
             int userId = user.id();
 
