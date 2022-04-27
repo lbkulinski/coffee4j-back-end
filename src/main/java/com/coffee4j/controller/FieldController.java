@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import schema.generated.tables.FieldTypes;
 import schema.generated.tables.Fields;
+import schema.generated.tables.Schemas;
+import schema.generated.tables.Users;
 
 import java.net.URI;
 import java.sql.Connection;
@@ -22,7 +24,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,6 +60,35 @@ public final class FieldController {
     } //static
 
     /**
+     * Returns whether the specified schema ID is invalid.
+     *
+     * @param schemaId the schema ID to be used in the operation
+     * @return {@code true}, if the specified schema ID is invalid and {@code false} otherwise
+     */
+    private boolean schemaIdInvalid(int schemaId) {
+        Record record;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            record = context.selectCount()
+                            .from(Schemas.SCHEMAS)
+                            .where(Schemas.SCHEMAS.ID.eq(schemaId))
+                            .fetchOne();
+        } catch (SQLException | DataAccessException e) {
+            return true;
+        } //end try catch
+
+        if (record == null) {
+            return true;
+        } //end if
+
+        int count = record.get(0, Integer.class);
+
+        return count == 0;
+    } //schemaIdInvalid
+
+    /**
      * Returns whether the specified type ID is invalid.
      *
      * @param typeId the type ID to be used in the operation
@@ -90,26 +120,32 @@ public final class FieldController {
     } //typeIdInvalid
 
     /**
-     * Attempts to create a new field for the current logged-in user. A name, type ID, display name, and shared flag
+     * Attempts to create a new field for the current logged-in user. A schema ID, name, display name, and type ID are
      * required for creation.
      *
+     * @param schemaId the schema ID to be used in the operation
      * @param name the name to be used in the operation
-     * @param typeId the type ID to be used in the operation
      * @param displayName the display name to be used in the operation
-     * @param sharedFlag the shared flag to be used in the operation
+     * @param typeId the type ID to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the create operation
      */
     @PostMapping
-    public ResponseEntity<Body<?>> create(@RequestParam String name, @RequestParam("type_id") int typeId,
+    public ResponseEntity<Body<?>> create(@RequestParam("schema_id") int schemaId, @RequestParam String name,
                                           @RequestParam("display_name") String displayName,
-                                          @RequestParam("shared") boolean sharedFlag) {
+                                          @RequestParam("type_id") int typeId) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        if (name.length() > MAX_NAME_LENGTH) {
+        if (this.schemaIdInvalid(schemaId)) {
+            String content = "%d is not a valid schema ID".formatted(schemaId);
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } else if (name.length() > MAX_NAME_LENGTH) {
             String content = "A name cannot exceed %d characters".formatted(MAX_NAME_LENGTH);
 
             Body<String> body = Body.error(content);
@@ -121,7 +157,7 @@ public final class FieldController {
             Body<String> body = Body.error(content);
 
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-        } else if (this.typeIdInvalid(typeId)) {
+        }  else if (this.typeIdInvalid(typeId)) {
             String content = "%d is not a valid type ID".formatted(typeId);
 
             Body<String> body = Body.error(content);
@@ -137,9 +173,9 @@ public final class FieldController {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
             record = context.insertInto(FIELDS)
-                            .columns(FIELDS.CREATOR_ID, FIELDS.NAME, FIELDS.TYPE_ID, FIELDS.DISPLAY_NAME,
-                                     FIELDS.SHARED)
-                            .values(creatorId, name, typeId, displayName, sharedFlag)
+                            .columns(FIELDS.CREATOR_ID, FIELDS.SCHEMA_ID, FIELDS.NAME, FIELDS.DISPLAY_NAME,
+                                     FIELDS.TYPE_ID)
+                            .values(creatorId, schemaId, name, displayName, typeId)
                             .returning(FIELDS.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
@@ -180,62 +216,49 @@ public final class FieldController {
     } //create
 
     /**
-     * Attempts to read the field data of the current logged-in user. Assuming data exists, the ID, creator ID, name,
-     * type ID, display name, and shared flag of each field are returned.
+     * Attempts to read the field data of the current logged-in user. Assuming data exists, the ID, creator ID, schema
+     * ID, name, display name, and type ID of each field are returned.
      *
      * @param id the ID to be used in the operation
-     * @param creatorId the creator ID to be used in the operation
      * @param name the name to be used in the operation
      * @param typeId the type ID to be used in the operation
      * @param displayName the display name to be used in the operation
-     * @param sharedFlag the shared flag to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(name = "creator_id", required = false) Integer creatorId,
+                                        @RequestParam(name = "schema_id", required = false) Integer schemaId,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(name = "type_id", required = false) Integer typeId,
                                         @RequestParam(name = "display_name", required = false) String displayName,
-                                        @RequestParam(name = "shared", required = false) Boolean sharedFlag) {
+                                        @RequestParam(name = "type_id", required = false) Integer typeId) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Condition condition = DSL.noCondition();
+        int creatorId = user.id();
 
-        if (Objects.equals(sharedFlag, Boolean.TRUE)) {
-            condition = condition.and(FIELDS.SHARED.isTrue());
-        } else {
-            if (Objects.equals(sharedFlag, Boolean.FALSE)) {
-                condition = condition.and(FIELDS.SHARED.isFalse());
-            } //end if
-
-            int userId = user.id();
-
-            condition = condition.and(FIELDS.CREATOR_ID.eq(userId));
-        } //end if
+        Condition condition = FIELDS.CREATOR_ID.eq(creatorId);
 
         if (id != null) {
             condition = condition.and(FIELDS.ID.eq(id));
         } //end if
 
-        if (creatorId != null) {
-            condition = condition.and(FIELDS.CREATOR_ID.eq(creatorId));
+        if (schemaId != null) {
+            condition = condition.and(FIELDS.SCHEMA_ID.eq(schemaId));
         } //end if
 
         if (name != null) {
             condition = condition.and(FIELDS.NAME.eq(name));
         } //end if
 
-        if (typeId != null) {
-            condition = condition.and(FIELDS.TYPE_ID.eq(typeId));
-        } //end if
-
         if (displayName != null) {
             condition = condition.and(FIELDS.DISPLAY_NAME.eq(displayName));
+        } //end if
+
+        if (typeId != null) {
+            condition = condition.and(FIELDS.TYPE_ID.eq(typeId));
         } //end if
 
         Result<Record> result;
@@ -269,28 +292,72 @@ public final class FieldController {
     } //read
 
     /**
-     * Attempts to update the field data of the current logged-in user. A field's name, type ID, display name, and
-     * shared flag can be updated. An ID and at least one update are required.
+     * Returns whether the specified creator ID is invalid.
+     *
+     * @param creatorId the schema ID to be used in the operation
+     * @return {@code true}, if the specified creator ID is invalid and {@code false} otherwise
+     */
+    private boolean creatorIdInvalid(int creatorId) {
+        Record record;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            record = context.selectCount()
+                            .from(Users.USERS)
+                            .where(Users.USERS.ID.eq(creatorId))
+                            .fetchOne();
+        } catch (SQLException | DataAccessException e) {
+            return true;
+        } //end try catch
+
+        if (record == null) {
+            return true;
+        } //end if
+
+        int count = record.get(0, Integer.class);
+
+        return count == 0;
+    } //creatorIdInvalid
+
+    /**
+     * Attempts to update the field data of the current logged-in user. A field's creator ID, schema ID, name, display
+     * name, and type ID can be updated. An ID and at least one update are required.
      *
      * @param id the ID to be used in the operation
+     * @param creatorId the creator ID to be used in the operation
+     * @param schemaId the schema ID to be used in the operation
      * @param name the name to be used in the operation
-     * @param typeId the type ID to be used in the operation
      * @param displayName the display name to be used in the operation
-     * @param sharedFlag the shared flag to be used in the operation
+     * @param typeId the type ID to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
     @PutMapping
-    public ResponseEntity<Body<?>> update(@RequestParam int id, @RequestParam(required = false) String name,
-                                          @RequestParam(name = "type_id", required = false) Integer typeId,
+    public ResponseEntity<Body<?>> update(@RequestParam int id,
+                                          @RequestParam(name = "creator_id", required = false) Integer creatorId,
+                                          @RequestParam(name = "schema_id", required = false) Integer schemaId,
+                                          @RequestParam(required = false) String name,
                                           @RequestParam(name = "display_name", required = false) String displayName,
-                                          @RequestParam(name = "shared", required = false) Boolean sharedFlag) {
+                                          @RequestParam(name = "type_id", required = false) Integer typeId) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        if ((name != null) && (name.length() > MAX_NAME_LENGTH)) {
+        if ((creatorId != null) && this.creatorIdInvalid(creatorId)) {
+            String content = "%d is not a valid creator ID".formatted(creatorId);
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } else if ((schemaId != null) && this.schemaIdInvalid(schemaId)) {
+            String content = "%d is not a valid schema ID".formatted(schemaId);
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } else if ((name != null) && (name.length() > MAX_NAME_LENGTH)) {
             String content = "A name cannot exceed %d characters".formatted(MAX_NAME_LENGTH);
 
             Body<String> body = Body.error(content);
@@ -312,20 +379,24 @@ public final class FieldController {
 
         Map<Field<?>, Object> fieldToNewValue = new HashMap<>();
 
-        if (name != null) {
-            fieldToNewValue.put(FIELDS.NAME, name);
+        if (creatorId != null) {
+            fieldToNewValue.put(FIELDS.CREATOR_ID, creatorId);
         } //end if
 
-        if (typeId != null) {
-            fieldToNewValue.put(FIELDS.TYPE_ID, typeId);
+        if (schemaId != null) {
+            fieldToNewValue.put(FIELDS.SCHEMA_ID, schemaId);
+        } //end if
+
+        if (name != null) {
+            fieldToNewValue.put(FIELDS.NAME, name);
         } //end if
 
         if (displayName != null) {
             fieldToNewValue.put(FIELDS.DISPLAY_NAME, displayName);
         } //end if
 
-        if (sharedFlag != null) {
-            fieldToNewValue.put(FIELDS.SHARED, sharedFlag);
+        if (typeId != null) {
+            fieldToNewValue.put(FIELDS.TYPE_ID, typeId);
         } //end if
 
         if (fieldToNewValue.isEmpty()) {
@@ -336,7 +407,7 @@ public final class FieldController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        int creatorId = user.id();
+        int userId = user.id();
 
         int rowsChanged;
 
@@ -346,7 +417,7 @@ public final class FieldController {
             rowsChanged = context.update(FIELDS)
                                  .set(fieldToNewValue)
                                  .where(FIELDS.ID.eq(id))
-                                 .and(FIELDS.CREATOR_ID.eq(creatorId))
+                                 .and(FIELDS.CREATOR_ID.eq(userId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
