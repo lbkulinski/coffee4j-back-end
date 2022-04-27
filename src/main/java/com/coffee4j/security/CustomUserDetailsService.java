@@ -1,35 +1,42 @@
 package com.coffee4j.security;
 
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.apache.logging.log4j.Logger;
+import com.coffee4j.Utilities;
 import org.apache.logging.log4j.LogManager;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import java.util.Objects;
-import org.jooq.Field;
-import org.jooq.impl.DSL;
-import org.jooq.Table;
+import org.apache.logging.log4j.Logger;
+import org.jooq.DSLContext;
 import org.jooq.Record;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import schema.generated.tables.Users;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
-import com.coffee4j.Utilities;
-import org.jooq.DSLContext;
-import org.jooq.SQLDialect;
 import java.sql.SQLException;
+import java.util.Objects;
 
 /**
  * A user details service of the Coffee4j application.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 23, 2022
+ * @version April 26, 2022
  */
 public final class CustomUserDetailsService implements UserDetailsService {
+    /**
+     * The {@code users} table of the {@link CustomUserDetailsService} class.
+     */
+    private static final Users USERS;
+
     /**
      * The {@link Logger} of the {@link CustomUserDetailsService} class.
      */
     private static final Logger LOGGER;
 
     static {
+        USERS = Users.USERS;
+
         LOGGER = LogManager.getLogger();
     } //static
 
@@ -44,22 +51,14 @@ public final class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Objects.requireNonNull(username, "the specified username is null");
 
-        Field<Integer> idField = DSL.field("id", Integer.class);
-
-        Field<String> usernameField = DSL.field("username", String.class);
-
-        Field<String> passwordHashField = DSL.field("password_hash", String.class);
-
-        Table<Record> usersTable = DSL.table("users");
-
         Record record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            record = context.select(idField, usernameField, passwordHashField)
-                            .from(usersTable)
-                            .where(usernameField.eq(username))
+            record = context.select()
+                            .from(USERS)
+                            .where(USERS.USERNAME.eq(username))
                             .fetchOne();
         } catch (SQLException e) {
             LOGGER.atError()
@@ -75,11 +74,11 @@ public final class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException(message);
         } //end if
 
-        int recordId = record.getValue(idField);
+        int recordId = record.get(USERS.ID);
 
-        String recordUsername = record.getValue(usernameField);
+        String recordUsername = record.get(USERS.USERNAME);
 
-        String recordPasswordHash = record.getValue(passwordHashField);
+        String recordPasswordHash = record.get(USERS.PASSWORD_HASH);
 
         return new User(recordId, recordUsername, recordPasswordHash);
     } //loadUserByUsername
