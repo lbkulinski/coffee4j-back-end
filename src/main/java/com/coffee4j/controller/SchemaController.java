@@ -1,52 +1,43 @@
 package com.coffee4j.controller;
 
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.http.ResponseEntity;
 import com.coffee4j.Body;
-import org.springframework.web.bind.annotation.RequestParam;
-import com.coffee4j.security.User;
 import com.coffee4j.Utilities;
-import org.springframework.http.HttpStatus;
-import org.jooq.Table;
+import com.coffee4j.security.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.Record;
+import org.jooq.*;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
-import org.jooq.Field;
-import org.jooq.DataType;
-import org.jooq.impl.SQLDataType;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import schema.generated.tables.Schemas;
+
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import org.jooq.DSLContext;
-import org.jooq.SQLDialect;
 import java.sql.SQLException;
-import org.jooq.exception.DataAccessException;
-import java.net.URI;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.jooq.Condition;
-import java.util.Objects;
-import org.jooq.Result;
-import java.util.Set;
-import java.util.Map;
-import java.util.HashSet;
-import org.springframework.web.bind.annotation.PutMapping;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import org.springframework.web.bind.annotation.DeleteMapping;
 
 /**
  * The REST controller used to interact with the Coffee4j schema data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 24, 2022
+ * @version April 26, 2022
  */
 @RestController
 @RequestMapping("api/schemas")
 public final class SchemaController {
+    /**
+     * The {@code schemas} table of the {@link SchemaController} class.
+     */
+    private static final Schemas SCHEMAS;
+
     /**
      * The maximum name length of the {@link SchemaController} class.
      */
@@ -58,6 +49,8 @@ public final class SchemaController {
     private static final Logger LOGGER;
 
     static {
+        SCHEMAS = Schemas.SCHEMAS;
+
         MAX_NAME_LENGTH = 45;
 
         LOGGER = LogManager.getLogger();
@@ -89,21 +82,7 @@ public final class SchemaController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        Table<Record> schemasTable = DSL.table("`schemas`");
-
-        Field<Boolean> defaultField = DSL.field("`default`", Boolean.class);
-
-        Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
         int creatorId = user.id();
-
-        Field<String> nameField = DSL.field("`name`", String.class);
-
-        Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
-
-        DataType<Integer> idType = SQLDataType.INTEGER.identity(true);
-
-        Field<Integer> idField = DSL.field("`id`", idType);
 
         Record record;
 
@@ -111,16 +90,16 @@ public final class SchemaController {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
             if (defaultFlag) {
-                context.update(schemasTable)
-                       .set(defaultField, false)
-                       .where(creatorIdField.eq(creatorId))
+                context.update(SCHEMAS)
+                       .set(SCHEMAS.DEFAULT, false)
+                       .where(SCHEMAS.CREATOR_ID.eq(creatorId))
                        .execute();
             } //end if
 
-            record = context.insertInto(schemasTable)
-                            .columns(creatorIdField, nameField, defaultField, sharedField)
+            record = context.insertInto(SCHEMAS)
+                            .columns(SCHEMAS.CREATOR_ID, SCHEMAS.NAME, SCHEMAS.DEFAULT, SCHEMAS.SHARED)
                             .values(creatorId, name, defaultFlag, sharedFlag)
-                            .returning(idField)
+                            .returningResult(SCHEMAS.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -146,7 +125,7 @@ public final class SchemaController {
 
         Body<String> body = Body.success(content);
 
-        int recordId = record.get(idField, Integer.class);
+        int recordId = record.get(SCHEMAS.ID);
 
         String locationString = "http://localhost:8080/api/schemas?id=%d".formatted(recordId);
 
@@ -185,52 +164,34 @@ public final class SchemaController {
         Condition condition = DSL.noCondition();
 
         if (sharedFlag == null) {
-            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
             int userId = user.id();
 
-            condition = condition.and(creatorIdField.eq(userId));
+            condition = condition.and(SCHEMAS.CREATOR_ID.eq(userId));
         } else if (sharedFlag) {
-            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
-
-            condition = condition.and(sharedField.isTrue());
+            condition = condition.and(SCHEMAS.SHARED.isTrue());
         } else {
-            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
-
-            condition = condition.and(sharedField.isFalse());
-
-            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
+            condition = condition.and(SCHEMAS.SHARED.isFalse());
 
             int userId = user.id();
 
-            condition = condition.and(creatorIdField.eq(userId));
+            condition = condition.and(SCHEMAS.CREATOR_ID.eq(userId));
         } //end if
 
         if (id != null) {
-            Field<Integer> idField = DSL.field("`id`", Integer.class);
-
-            condition = condition.and(idField.eq(id));
+            condition = condition.and(SCHEMAS.ID.eq(id));
         } //end if
 
         if (creatorId != null) {
-            Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
-            condition = condition.and(creatorIdField.eq(creatorId));
+            condition = condition.and(SCHEMAS.CREATOR_ID.eq(creatorId));
         } //end if
 
         if (name != null) {
-            Field<String> nameField = DSL.field("`name`", String.class);
-
-            condition = condition.and(nameField.eq(name));
+            condition = condition.and(SCHEMAS.NAME.eq(name));
         } //end if
 
         if (defaultFlag != null) {
-            Field<Boolean> defaultField = DSL.field("`default`", Boolean.class);
-
-            condition = condition.and(defaultField.eq(defaultFlag));
+            condition = condition.and(SCHEMAS.DEFAULT.eq(defaultFlag));
         } //end if
-
-        Table<Record> schemasTable = DSL.table("`schemas`");
 
         Result<? extends Record> result;
 
@@ -238,7 +199,7 @@ public final class SchemaController {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
             result = context.select()
-                            .from(schemasTable)
+                            .from(SCHEMAS)
                             .where(condition)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
@@ -286,21 +247,15 @@ public final class SchemaController {
         Map<Field<?>, Object> fieldToNewValue = new HashMap<>();
 
         if (name != null) {
-            Field<String> nameField = DSL.field("`name`", String.class);
-
-            fieldToNewValue.put(nameField, name);
+            fieldToNewValue.put(SCHEMAS.NAME, name);
         } //end if
 
         if (defaultFlag != null) {
-            Field<Boolean> defaultField = DSL.field("`default`", Boolean.class);
-
-            fieldToNewValue.put(defaultField, defaultFlag);
+            fieldToNewValue.put(SCHEMAS.DEFAULT, defaultFlag);
         } //end if
 
         if (sharedFlag != null) {
-            Field<Boolean> sharedField = DSL.field("`shared`", Boolean.class);
-
-            fieldToNewValue.put(sharedField, sharedFlag);
+            fieldToNewValue.put(SCHEMAS.SHARED, sharedFlag);
         } //end if
 
         if (fieldToNewValue.isEmpty()) {
@@ -311,12 +266,6 @@ public final class SchemaController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        Table<Record> schemasTable = DSL.table("`schemas`");
-
-        Field<Integer> idField = DSL.field("`id`", Integer.class);
-
-        Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
         int creatorId = user.id();
 
         int rowsChanged;
@@ -324,10 +273,10 @@ public final class SchemaController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.update(schemasTable)
+            rowsChanged = context.update(SCHEMAS)
                                  .set(fieldToNewValue)
-                                 .where(idField.eq(id))
-                                 .and(creatorIdField.eq(creatorId))
+                                 .where(SCHEMAS.ID.eq(id))
+                                 .and(SCHEMAS.CREATOR_ID.eq(creatorId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -370,12 +319,6 @@ public final class SchemaController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Table<Record> schemasTable = DSL.table("`schemas`");
-
-        Field<Integer> idField = DSL.field("`id`", Integer.class);
-
-        Field<Integer> creatorIdField = DSL.field("`creator_id`", Integer.class);
-
         int creatorId = user.id();
 
         int rowsChanged;
@@ -383,9 +326,9 @@ public final class SchemaController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.delete(schemasTable)
-                                 .where(idField.eq(id))
-                                 .and(creatorIdField.eq(creatorId))
+            rowsChanged = context.delete(SCHEMAS)
+                                 .where(SCHEMAS.ID.eq(id))
+                                 .and(SCHEMAS.CREATOR_ID.eq(creatorId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
