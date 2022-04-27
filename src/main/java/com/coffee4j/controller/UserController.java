@@ -1,44 +1,44 @@
 package com.coffee4j.controller;
 
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.http.ResponseEntity;
 import com.coffee4j.Body;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.http.HttpStatus;
-import org.jooq.Table;
-import org.jooq.Record;
-import org.jooq.impl.DSL;
+import com.coffee4j.Utilities;
+import com.coffee4j.security.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.SQLDialect;
+import org.jooq.exception.DataAccessException;
+import org.jooq.impl.DSL;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.web.bind.annotation.*;
+import schema.generated.tables.Users;
+
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import com.coffee4j.Utilities;
-import org.jooq.DSLContext;
-import org.jooq.SQLDialect;
 import java.sql.SQLException;
-import org.jooq.exception.DataAccessException;
-import java.net.URI;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.bind.annotation.GetMapping;
-import com.coffee4j.security.User;
-import java.util.Map;
-import org.springframework.web.bind.annotation.PutMapping;
 import java.util.HashMap;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import java.util.Map;
 
 /**
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 24, 2022
+ * @version April 26, 2022
  */
 @RestController
 @RequestMapping("api/users")
 public final class UserController {
+    /**
+     * The {@code users} table of the {@link UserController} class.
+     */
+    private static final Users USERS;
+
     /**
      * The maximum username length of the {@link UserController} class.
      */
@@ -50,6 +50,8 @@ public final class UserController {
     private static final Logger LOGGER;
 
     static {
+        USERS = Users.USERS;
+
         MAX_USERNAME_LENGTH = 15;
 
         LOGGER = LogManager.getLogger();
@@ -72,12 +74,6 @@ public final class UserController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        Table<Record> usersTable = DSL.table("`users`");
-
-        Field<String> usernameField = DSL.field("`username`", String.class);
-
-        Field<String> passwordHashField = DSL.field("`password_hash`", String.class);
-
         String salt = BCrypt.gensalt();
 
         String passwordHash = BCrypt.hashpw(password, salt);
@@ -87,8 +83,8 @@ public final class UserController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.insertInto(usersTable)
-                                 .columns(usernameField, passwordHashField)
+            rowsChanged = context.insertInto(USERS)
+                                 .columns(USERS.USERNAME, USERS.PASSWORD_HASH)
                                  .values(username, passwordHash)
                                  .execute();
         } catch (SQLException | DataAccessException e) {
@@ -140,12 +136,6 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Field<Integer> idField = DSL.field("`id`", Integer.class);
-
-        Field<String> usernameField = DSL.field("`username`", String.class);
-
-        Table<Record> usersTable = DSL.table("`users`");
-
         int id = user.id();
 
         Record record;
@@ -153,9 +143,9 @@ public final class UserController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            record = context.select(idField, usernameField)
-                            .from(usersTable)
-                            .where(idField.eq(id))
+            record = context.select(USERS.ID, USERS.USERNAME)
+                            .from(USERS)
+                            .where(USERS.ID.eq(id))
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -201,22 +191,18 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Map<Field<String>, String> fieldToNewValue = new HashMap<>();
+        Map<Field<?>, Object> fieldToNewValue = new HashMap<>();
 
         if (username != null) {
-            Field<String> usernameField = DSL.field("`username`", String.class);
-
-            fieldToNewValue.put(usernameField, username);
+            fieldToNewValue.put(USERS.USERNAME, username);
         } //end if
 
         if (password != null) {
-            Field<String> passwordHashField = DSL.field("`password_hash`", String.class);
-
             String salt = BCrypt.gensalt();
 
             String passwordHash = BCrypt.hashpw(password, salt);
 
-            fieldToNewValue.put(passwordHashField, passwordHash);
+            fieldToNewValue.put(USERS.PASSWORD_HASH, passwordHash);
         } //end if
 
         if (fieldToNewValue.isEmpty()) {
@@ -227,10 +213,6 @@ public final class UserController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        Table<Record> usersTable = DSL.table("`users`");
-
-        Field<Integer> idField = DSL.field("`id`", Integer.class);
-
         int id = user.id();
 
         int rowsChanged;
@@ -238,9 +220,9 @@ public final class UserController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.update(usersTable)
+            rowsChanged = context.update(USERS)
                                  .set(fieldToNewValue)
-                                 .where(idField.eq(id))
+                                 .where(USERS.ID.eq(id))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -282,10 +264,6 @@ public final class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        Table<Record> usersTable = DSL.table("`users`");
-
-        Field<Integer> idField = DSL.field("`id`", Integer.class);
-
         int id = user.id();
 
         int rowsChanged;
@@ -293,8 +271,8 @@ public final class UserController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.delete(usersTable)
-                                 .where(idField.eq(id))
+            rowsChanged = context.delete(USERS)
+                                 .where(USERS.ID.eq(id))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
