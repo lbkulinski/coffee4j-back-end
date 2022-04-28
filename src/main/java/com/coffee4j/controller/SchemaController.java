@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * The REST controller used to interact with the Coffee4j schema data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 26, 2022
+ * @version April 27, 2022
  */
 @RestController
 @RequestMapping("api/schemas")
@@ -83,7 +83,7 @@ public final class SchemaController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        int creatorId = user.id();
+        int ownerId = user.id();
 
         Record record;
 
@@ -93,13 +93,13 @@ public final class SchemaController {
             if (defaultFlag) {
                 context.update(SCHEMAS)
                        .set(SCHEMAS.DEFAULT, false)
-                       .where(SCHEMAS.CREATOR_ID.eq(creatorId))
+                       .where(SCHEMAS.OWNER_ID.eq(ownerId))
                        .execute();
             } //end if
 
             record = context.insertInto(SCHEMAS)
-                            .columns(SCHEMAS.CREATOR_ID, SCHEMAS.NAME, SCHEMAS.DEFAULT, SCHEMAS.SHARED)
-                            .values(creatorId, name, defaultFlag, sharedFlag)
+                            .columns(SCHEMAS.OWNER_ID, SCHEMAS.NAME, SCHEMAS.DEFAULT, SCHEMAS.SHARED)
+                            .values(ownerId, name, defaultFlag, sharedFlag)
                             .returningResult(SCHEMAS.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
@@ -140,11 +140,11 @@ public final class SchemaController {
     } //create
 
     /**
-     * Attempts to read the schema data of the current logged-in user. Assuming data exists, the ID, creator ID, name,
+     * Attempts to read the schema data of the current logged-in user. Assuming data exists, the ID, owner ID, name,
      * default flag, and shared flag of each schema are returned.
      *
      * @param id the ID to be used in the operation
-     * @param creatorId the creator ID to be used in the operation
+     * @param ownerId the owner ID to be used in the operation
      * @param name the name to be used in the operation
      * @param defaultFlag the default flag to be used in the operation
      * @param sharedFlag the shared flag to be used in the operation
@@ -152,7 +152,7 @@ public final class SchemaController {
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(name = "creator_id", required = false) Integer creatorId,
+                                        @RequestParam(name = "owner_id", required = false) Integer ownerId,
                                         @RequestParam(required = false) String name,
                                         @RequestParam(name = "default", required = false) Boolean defaultFlag,
                                         @RequestParam(name = "shared", required = false) Boolean sharedFlag) {
@@ -173,15 +173,15 @@ public final class SchemaController {
 
             int userId = user.id();
 
-            condition = condition.and(SCHEMAS.CREATOR_ID.eq(userId));
+            condition = condition.and(SCHEMAS.OWNER_ID.eq(userId));
         } //end if
 
         if (id != null) {
             condition = condition.and(SCHEMAS.ID.eq(id));
         } //end if
 
-        if (creatorId != null) {
-            condition = condition.and(SCHEMAS.CREATOR_ID.eq(creatorId));
+        if (ownerId != null) {
+            condition = condition.and(SCHEMAS.OWNER_ID.eq(ownerId));
         } //end if
 
         if (name != null) {
@@ -265,7 +265,7 @@ public final class SchemaController {
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        int creatorId = user.id();
+        int ownerId = user.id();
 
         int rowsChanged;
 
@@ -275,7 +275,7 @@ public final class SchemaController {
             rowsChanged = context.update(SCHEMAS)
                                  .set(fieldToNewValue)
                                  .where(SCHEMAS.ID.eq(id))
-                                 .and(SCHEMAS.CREATOR_ID.eq(creatorId))
+                                 .and(SCHEMAS.OWNER_ID.eq(ownerId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -318,7 +318,7 @@ public final class SchemaController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        int creatorId = user.id();
+        int ownerId = user.id();
 
         int rowsChanged;
 
@@ -327,7 +327,7 @@ public final class SchemaController {
 
             rowsChanged = context.delete(SCHEMAS)
                                  .where(SCHEMAS.ID.eq(id))
-                                 .and(SCHEMAS.CREATOR_ID.eq(creatorId))
+                                 .and(SCHEMAS.OWNER_ID.eq(ownerId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
