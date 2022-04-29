@@ -2,6 +2,8 @@ package com.coffee4j.controller;
 
 import com.coffee4j.Body;
 import com.coffee4j.Utilities;
+import com.coffee4j.security.User;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.exception.DataAccessException;
@@ -21,12 +23,12 @@ import java.sql.SQLException;
 @RequestMapping("api/schema_fields")
 public final class SchemaFieldsController {
     /**
-     * The {@code schemas} table of the {@link SchemaController} class.
+     * The {@code schema_fields} table of the {@link SchemaFieldsController} class.
      */
     private static final SchemaFields SCHEMA_FIELDS;
 
     /**
-     * The {@link Logger} of the {@link SchemaController} class.
+     * The {@link Logger} of the {@link SchemaFieldsController} class.
      */
     private static final Logger LOGGER;
 
@@ -39,6 +41,14 @@ public final class SchemaFieldsController {
     @PostMapping
     public ResponseEntity<Body<?>> create(@RequestParam("schema_id") int schemaId,
                                           @RequestParam("field_id") int fieldId) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        //TODO: Make sure the owner of both is the current logged in user
+
         int rowsChanged;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
@@ -76,7 +86,13 @@ public final class SchemaFieldsController {
     } //create
 
     @GetMapping
-    public ResponseEntity<Body<?>> read(@RequestParam("schema_id") int schemaId) {
+    public ResponseEntity<Body<?>> read(@RequestParam(name = "schema_id", required = false) int schemaId) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
         /*
         SELECT
             `s`.`id` AS `schema_id`,
