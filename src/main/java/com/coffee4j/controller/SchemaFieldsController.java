@@ -3,14 +3,14 @@ package com.coffee4j.controller;
 import com.coffee4j.Body;
 import com.coffee4j.Utilities;
 import com.coffee4j.security.User;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
-import org.jooq.SQLDialect;
+import org.jooq.*;
+import org.jooq.Record;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import schema.generated.tables.FieldTypes;
 import schema.generated.tables.Fields;
 import schema.generated.tables.SchemaFields;
 import org.apache.logging.log4j.Logger;
@@ -20,13 +20,25 @@ import schema.generated.tables.Schemas;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.List;
 
 @RestController
 @RequestMapping("api/schema_fields")
 public final class SchemaFieldsController {
+    /**
+     * The {@code schemas} table of the {@link SchemaFieldsController} class.
+     */
     private static final Schemas SCHEMAS;
 
+    /**
+     * The {@code fields} table of the {@link SchemaFieldsController} class.
+     */
     private static final Fields FIELDS;
+
+    /**
+     * The {@code field_types} table of the {@link SchemaFieldsController} class.
+     */
+    private static final FieldTypes FIELD_TYPES;
 
     /**
      * The {@code schema_fields} table of the {@link SchemaFieldsController} class.
@@ -42,6 +54,8 @@ public final class SchemaFieldsController {
         SCHEMAS = Schemas.SCHEMAS;
 
         FIELDS = Fields.FIELDS;
+
+        FIELD_TYPES = FieldTypes.FIELD_TYPES;
 
         SCHEMA_FIELDS = SchemaFields.SCHEMA_FIELDS;
 
@@ -137,12 +151,57 @@ public final class SchemaFieldsController {
     } //create
 
     @GetMapping
-    public ResponseEntity<Body<?>> read(@RequestParam(name = "schema_id", required = false) int schemaId) {
+    public ResponseEntity<Body<?>> read(@RequestParam(name = "schema_id", required = false) Integer schemaId) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
+
+        List<Field<?>> columns = List.of(
+            SCHEMAS.ID.as("schema_id"),
+            SCHEMAS.OWNER_ID,
+            SCHEMAS.NAME.as("schema_name"),
+            SCHEMAS.DEFAULT,
+            SCHEMAS.SHARED,
+            FIELDS.ID.as("field_id"),
+            FIELDS.NAME.as("field_name"),
+            FIELDS.DISPLAY_NAME.as("field_display_name"),
+            FIELD_TYPES.ID.as("field_type_id"),
+            FIELD_TYPES.NAME.as("field_type_name")
+        );
+
+        int ownerId = user.id();
+
+        Result<Record> result;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            result = context.select(columns)
+                            .from(SCHEMAS)
+                            .innerJoin(SCHEMA_FIELDS)
+                            .on(SCHEMA_FIELDS.SCHEMA_ID.eq(SCHEMAS.ID))
+                            .innerJoin(FIELDS)
+                            .on(FIELDS.ID.eq(SCHEMA_FIELDS.FIELD_ID))
+                            .innerJoin(FIELD_TYPES)
+                            .on(FIELD_TYPES.ID.eq(FIELDS.TYPE_ID))
+                            .where(SCHEMAS.OWNER_ID.eq(ownerId))
+                            .or(SCHEMAS.SHARED.isTrue())
+                            .or(FIELDS.OWNER_ID.eq(ownerId))
+                            .or(FIELDS.SHARED.isTrue())
+                            .fetch();
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "The association's data could not be retrieved";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
 
         /*
         SELECT
@@ -166,6 +225,8 @@ public final class SchemaFieldsController {
             `field_types` `ft` ON `ft`.`id` = `f`.`type_id`
          */
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        Body<?> body = Body.success(result.intoMaps());
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
 }
