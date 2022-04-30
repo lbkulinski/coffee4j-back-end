@@ -65,28 +65,19 @@ public final class FieldController {
      * @return {@code true}, if the specified type ID is invalid and {@code false} otherwise
      */
     private boolean checkTypeId(int typeId) {
-        Record record;
+        boolean typeIdExists;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            record = context.selectCount()
-                            .from(FieldTypes.FIELD_TYPES)
-                            .where(FieldTypes.FIELD_TYPES.ID.eq(typeId))
-                            .fetchOne();
+            typeIdExists = context.fetchExists(FieldTypes.FIELD_TYPES, FieldTypes.FIELD_TYPES.ID.eq(typeId));
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError().withThrowable(e).log();
 
             return true;
         } //end try catch
 
-        if (record == null) {
-            return true;
-        } //end if
-
-        int count = record.get(0, Integer.class);
-
-        return count == 0;
+        return typeIdExists;
     } //checkTypeId
 
     /**

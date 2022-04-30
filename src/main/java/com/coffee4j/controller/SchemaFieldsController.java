@@ -11,9 +11,11 @@ import org.jooq.impl.DSL;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import schema.generated.tables.Fields;
 import schema.generated.tables.SchemaFields;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import schema.generated.tables.Schemas;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -22,6 +24,10 @@ import java.sql.SQLException;
 @RestController
 @RequestMapping("api/schema_fields")
 public final class SchemaFieldsController {
+    private static final Schemas SCHEMAS;
+
+    private static final Fields FIELDS;
+
     /**
      * The {@code schema_fields} table of the {@link SchemaFieldsController} class.
      */
@@ -33,10 +39,45 @@ public final class SchemaFieldsController {
     private static final Logger LOGGER;
 
     static {
+        SCHEMAS = Schemas.SCHEMAS;
+
+        FIELDS = Fields.FIELDS;
+
         SCHEMA_FIELDS = SchemaFields.SCHEMA_FIELDS;
 
         LOGGER = LogManager.getLogger();
     } //static
+
+    /**
+     * Returns whether the specified schema ID and field ID is associated with the specified owner ID.
+     *
+     * @param schemaId the schema ID to be used in the operation
+     * @param fieldId the field ID to be used in the operation
+     * @param ownerId the owner ID to be used in the operation
+     * @return {@code true}, if the specified schema ID and field ID is associated with the specified owner ID and
+     * {@code false} otherwise
+     */
+    private boolean checkOwner(int schemaId, int fieldId, int ownerId) {
+        boolean schemaExists;
+
+        boolean fieldExists;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            schemaExists = context.fetchExists(SCHEMAS, SCHEMAS.ID.eq(schemaId), SCHEMAS.OWNER_ID.eq(ownerId));
+
+            fieldExists = context.fetchExists(FIELDS, FIELDS.ID.eq(fieldId), FIELDS.OWNER_ID.eq(ownerId));
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            return false;
+        } //end try catch
+
+        return schemaExists && fieldExists;
+    } //checkOwner
 
     @PostMapping
     public ResponseEntity<Body<?>> create(@RequestParam("schema_id") int schemaId,
@@ -47,7 +88,17 @@ public final class SchemaFieldsController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        //TODO: Make sure the owner of both is the current logged in user
+        int ownerId = user.id();
+
+        boolean ownerValid = this.checkOwner(schemaId, fieldId, ownerId);
+
+        if (!ownerValid) {
+            String content = "An association with the specified parameters could not be created";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
 
         int rowsChanged;
 
