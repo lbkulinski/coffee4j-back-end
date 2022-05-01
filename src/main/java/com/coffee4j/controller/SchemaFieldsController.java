@@ -229,4 +229,69 @@ public final class SchemaFieldsController {
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
+
+    /**
+     * Attempts to delete the schema-field association data of the current logged-in user. A schema ID and field ID are
+     * required for deletion.
+     *
+     * @param schemaId the schema ID to be used in the operation
+     * @param fieldId the field ID to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
+    @DeleteMapping
+    public ResponseEntity<Body<?>> delete(@RequestParam("schema_id") int schemaId,
+                                          @RequestParam("field_id") int fieldId) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        int ownerId = user.id();
+
+        boolean ownerValid = this.checkOwner(schemaId, fieldId, ownerId);
+
+        if (!ownerValid) {
+            String content = "The schema-field association's data could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+
+            rowsChanged = context.delete(SCHEMA_FIELDS)
+                                 .where(SCHEMA_FIELDS.SCHEMA_ID.eq(schemaId))
+                                 .and(SCHEMA_FIELDS.FIELD_ID.eq(fieldId))
+                                 .execute();
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "The schema-field association's data could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "The schema-field association's data could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "The schema-field association's data was successfully deleted";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
+    } //delete
 }
