@@ -20,17 +20,13 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * The REST controller used to interact with the Coffee4j field data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 27, 2022
+ * @version May 1, 2022
  */
 @RestController
 @RequestMapping("api/fields")
@@ -245,11 +241,9 @@ public final class FieldController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
-        Set<Map<String, Object>> content = result.stream()
-                                                 .map(Record::intoMap)
-                                                 .collect(Collectors.toUnmodifiableSet());
+        List<Map<String, Object>> content = result.intoMaps();
 
-        Body<Set<Map<String, Object>>> body = Body.success(content);
+        Body<List<Map<String, Object>>> body = Body.success(content);
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
