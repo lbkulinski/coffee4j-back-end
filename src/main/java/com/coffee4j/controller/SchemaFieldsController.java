@@ -20,7 +20,7 @@ import schema.generated.tables.Schemas;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("api/schema_fields")
@@ -150,6 +150,66 @@ public final class SchemaFieldsController {
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //create
 
+    private void processRecord(Record record, Map<Integer, Map<String, Object>> idToSchema,
+                               Map<Integer, Set<Map<String, Object>>> idToFields) {
+        Objects.requireNonNull(record, "the specified record is null");
+
+        Objects.requireNonNull(idToSchema, "the specified map of ID to schema is null");
+
+        Objects.requireNonNull(idToFields, "the specified map of ID to fields is null");
+
+        int schemaId = record.get(SCHEMAS.ID);
+
+        Map<String, Object> schema = idToSchema.computeIfAbsent(schemaId, id -> new HashMap<>());
+
+        schema.putIfAbsent("id", schemaId);
+
+        int schemaOwnerId = record.get(SCHEMAS.OWNER_ID);
+
+        schema.putIfAbsent("owner_id", schemaOwnerId);
+
+        String schemaName = record.get(SCHEMAS.NAME);
+
+        schema.putIfAbsent("name", schemaName);
+
+        boolean schemaDefault = record.get(SCHEMAS.DEFAULT);
+
+        schema.putIfAbsent("default", schemaDefault);
+
+        boolean schemaShared = record.get(SCHEMAS.SHARED);
+
+        schema.putIfAbsent("shared", schemaShared);
+
+        int fieldTypeId = record.get(FIELD_TYPES.ID);
+
+        String fieldTypeName = record.get(FIELD_TYPES.NAME);
+
+        int fieldId = record.get(FIELDS.ID);
+
+        String fieldName = record.get(FIELDS.NAME);
+
+        String fieldDisplayName = record.get(FIELDS.DISPLAY_NAME);
+
+        boolean fieldShared = record.get(FIELDS.SHARED);
+
+        Map<String, Object> fieldType = Map.of(
+            "id", fieldTypeId,
+            "name", fieldTypeName
+        );
+
+        Map<String, Object> field = Map.of(
+            "id", fieldId,
+            "name", fieldName,
+            "display_name", fieldDisplayName,
+            "shared", fieldShared,
+            "type", fieldType
+        );
+
+        Set<Map<String, Object>> fields = idToFields.computeIfAbsent(schemaId, id -> new HashSet<>());
+
+        fields.add(field);
+    } //processRecord
+
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(name = "schema_id", required = false) Integer schemaId) {
         User user = Utilities.getLoggedInUser();
@@ -159,17 +219,25 @@ public final class SchemaFieldsController {
         } //end if
 
         List<Field<?>> columns = List.of(
-            SCHEMAS.ID.as("schema_id"),
+            SCHEMAS.ID,
             SCHEMAS.OWNER_ID,
-            SCHEMAS.NAME.as("schema_name"),
+            SCHEMAS.NAME,
             SCHEMAS.DEFAULT,
             SCHEMAS.SHARED,
-            FIELDS.ID.as("field_id"),
-            FIELDS.NAME.as("field_name"),
-            FIELDS.DISPLAY_NAME.as("field_display_name"),
-            FIELD_TYPES.ID.as("field_type_id"),
-            FIELD_TYPES.NAME.as("field_type_name")
+            FIELDS.ID,
+            FIELDS.NAME,
+            FIELDS.DISPLAY_NAME,
+            FIELD_TYPES.ID,
+            FIELD_TYPES.NAME
         );
+
+        Condition condition;
+
+        if (schemaId == null) {
+            condition = DSL.noCondition();
+        } else {
+            condition = SCHEMAS.ID.eq(schemaId);
+        } //end if
 
         int ownerId = user.id();
 
@@ -180,16 +248,14 @@ public final class SchemaFieldsController {
 
             result = context.select(columns)
                             .from(SCHEMAS)
-                            .innerJoin(SCHEMA_FIELDS)
-                            .on(SCHEMA_FIELDS.SCHEMA_ID.eq(SCHEMAS.ID))
-                            .innerJoin(FIELDS)
-                            .on(FIELDS.ID.eq(SCHEMA_FIELDS.FIELD_ID))
-                            .innerJoin(FIELD_TYPES)
-                            .on(FIELD_TYPES.ID.eq(FIELDS.TYPE_ID))
-                            .where(SCHEMAS.OWNER_ID.eq(ownerId))
-                            .or(SCHEMAS.SHARED.isTrue())
-                            .or(FIELDS.OWNER_ID.eq(ownerId))
-                            .or(FIELDS.SHARED.isTrue())
+                            .join(SCHEMA_FIELDS).on(SCHEMA_FIELDS.SCHEMA_ID.eq(SCHEMAS.ID))
+                            .join(FIELDS).on(FIELDS.ID.eq(SCHEMA_FIELDS.FIELD_ID))
+                            .join(FIELD_TYPES).on(FIELD_TYPES.ID.eq(FIELDS.TYPE_ID))
+                            .where(condition)
+                            .and(SCHEMAS.OWNER_ID.eq(ownerId)
+                                                 .or(SCHEMAS.SHARED.isTrue()))
+                            .and(FIELDS.OWNER_ID.eq(ownerId)
+                                                .or(FIELDS.SHARED.isTrue()))
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -203,29 +269,31 @@ public final class SchemaFieldsController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
-        /*
-        SELECT
-            `s`.`id` AS `schema_id`,
-            `s`.`owner_id`,
-            `s`.`name` AS `schema_name`,
-            `s`.`default`,
-            `s`.`shared`,
-            `f`.`id` AS `field_id`,
-            `f`.`name` AS `field_name`,
-            `f`.`display_name` AS `field_display_name`,
-            `ft`.`id` AS `field_type_id`,
-            `ft`.`name` AS `field_type_name`
-        FROM
-            `schemas` `s`
-                INNER JOIN
-            `schema_fields` `sf` ON `s`.`id` = `sf`.`schema_id`
-                INNER JOIN
-            `fields` `f` ON `sf`.`field_id` = `f`.`id`
-                INNER JOIN
-            `field_types` `ft` ON `ft`.`id` = `f`.`type_id`
-         */
+        Map<Integer, Map<String, Object>> idToSchema = new HashMap<>();
 
-        Body<?> body = Body.success(result.intoMaps());
+        Map<Integer, Set<Map<String, Object>>> idToFields = new HashMap<>();
+
+        for (Record record : result) {
+            this.processRecord(record, idToSchema, idToFields);
+        } //end for
+
+        for (Map.Entry<Integer, Map<String, Object>> entry : idToSchema.entrySet()) {
+            int id = entry.getKey();
+
+            if (!idToFields.containsKey(id)) {
+                continue;
+            } //end if
+
+            Set<Map<String, Object>> fields = idToFields.get(id);
+
+            Map<String, Object> schema = entry.getValue();
+
+            schema.put("fields", fields);
+        } //end for
+
+        Collection<Map<String, Object>> values = idToSchema.values();
+
+        Body<Collection<Map<String, Object>>> body = Body.success(values);
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
