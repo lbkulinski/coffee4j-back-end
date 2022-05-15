@@ -29,10 +29,10 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 26, 2022
+ * @version May 14, 2022
  */
 @RestController
-@RequestMapping("api/users")
+@RequestMapping("/api/users")
 public final class UserController {
     /**
      * The {@code users} table of the {@link UserController} class.

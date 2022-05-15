@@ -9,13 +9,28 @@
 <script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script>
     $(function () {
+        let schema = {
+            "name": "Logan's Schema",
+            "default": true,
+            "fields": [
+                {
+                    "name": "test_field",
+                    "display_name": "Test Field",
+                    "type": {
+                        "id": 1
+                    }
+                }
+            ]
+        };
+
+        let schema_string = JSON.stringify(schema);
+
         $.ajax({
-            "type": "DELETE",
-            "url": "http://localhost:8080/api/schema_fields",
-            "data": {
-                "schema_id": 2,
-                "field_id": 9
-            },
+            "type": "POST",
+            "url": "http://localhost:8080/api/schemas",
+            "contentType": "application/json",
+            "processData": false,
+            "data": schema_string,
             "success": function (response) {
                 console.log(response);
             }
