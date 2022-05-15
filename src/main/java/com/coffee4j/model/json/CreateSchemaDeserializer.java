@@ -90,17 +90,53 @@ public class CreateSchemaDeserializer extends JsonDeserializer<CreateSchema> {
 
         JsonNode jsonNode = objectCodec.readTree(parser);
 
-        String name = jsonNode.get("name")
-                              .asText();
+        if (!jsonNode.has("name")) {
+            throw JsonMappingException.from(parser, ERROR_MESSAGE);
+        } //end if
 
-        boolean defaultFlag = jsonNode.get("default")
-                                      .asBoolean();
+        JsonNode nameNode = jsonNode.get("name");
 
-        boolean sharedFlag = jsonNode.get("shared")
-                                     .asBoolean();
+        if (!nameNode.isTextual()) {
+            throw JsonMappingException.from(parser, ERROR_MESSAGE);
+        } //end if
 
-        Iterator<JsonNode> elements = jsonNode.get("fields")
-                                              .elements();
+        String name = nameNode.asText();
+
+        if (!jsonNode.has("default")) {
+            throw JsonMappingException.from(parser, ERROR_MESSAGE);
+        } //end if
+
+        JsonNode defaultFlagNode = jsonNode.get("default");
+
+        if (!defaultFlagNode.isBoolean()) {
+            throw JsonMappingException.from(parser, ERROR_MESSAGE);
+        } //end if
+
+        boolean defaultFlag = defaultFlagNode.asBoolean();
+
+        if (!jsonNode.has("shared")) {
+            throw JsonMappingException.from(parser, ERROR_MESSAGE);
+        } //end if
+
+        JsonNode sharedFlagNode = jsonNode.get("shared");
+
+        if (!sharedFlagNode.isBoolean()) {
+            throw JsonMappingException.from(parser, ERROR_MESSAGE);
+        } //end if
+
+        boolean sharedFlag = sharedFlagNode.asBoolean();
+
+        if (!jsonNode.has("fields")) {
+            throw JsonMappingException.from(parser, ERROR_MESSAGE);
+        } //end if
+
+        JsonNode fieldsNode = jsonNode.get("fields");
+
+        if (!fieldsNode.isArray()) {
+            throw JsonMappingException.from(parser, ERROR_MESSAGE);
+        } //end if
+
+        Iterator<JsonNode> elements = fieldsNode.elements();
 
         Set<CreateSchema.Field> fields = new HashSet<>();
 
