@@ -143,4 +143,97 @@ public final class CoffeeController {
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
+
+    @PutMapping
+    public ResponseEntity<Body<?>> update(@RequestParam int id, @RequestParam String name) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        int userId = user.id();
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection);
+
+            rowsChanged = context.update(COFFEE)
+                                 .set(COFFEE.NAME, name)
+                                 .where(COFFEE.ID.eq(id))
+                                 .and(COFFEE.USER_ID.eq(userId))
+                                 .execute();
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "A coffee with the specified parameters could not be updated";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "A coffee with the specified parameters could not be updated";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "A coffee with the specified parameters was successfully updated";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
+    } //update
+
+    @DeleteMapping
+    public ResponseEntity<Body<?>> delete(@RequestParam int id) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        int userId = user.id();
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection);
+
+            rowsChanged = context.deleteFrom(COFFEE)
+                                 .where(COFFEE.ID.eq(id))
+                                 .and(COFFEE.USER_ID.eq(userId))
+                                 .execute();
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "A coffee with the specified parameters could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "A coffee with the specified parameters could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "A coffee with the specified parameters was successfully deleted";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
+    } //delete
 }

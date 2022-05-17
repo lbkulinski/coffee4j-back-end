@@ -10,10 +10,10 @@
 <script>
     $(function () {
         $.ajax({
-            "type": "POST",
+            "type": "DELETE",
             "url": "http://localhost:8080/api/coffee",
             "data": {
-                "name": "Karinga"
+                "id": 1
             },
             "success": function (response) {
                 console.log(response);
