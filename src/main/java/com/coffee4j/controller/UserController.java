@@ -16,8 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
-import schema.generated.tables.Users;
-
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -29,15 +27,15 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 14, 2022
+ * @version May 17, 2022
  */
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/user")
 public final class UserController {
     /**
-     * The {@code users} table of the {@link UserController} class.
+     * The {@code user} table of the {@link UserController} class.
      */
-    private static final Users USERS;
+    private static final schema.generated.tables.User USER;
 
     /**
      * The maximum username length of the {@link UserController} class.
@@ -50,7 +48,7 @@ public final class UserController {
     private static final Logger LOGGER;
 
     static {
-        USERS = Users.USERS;
+        USER = schema.generated.tables.User.USER;
 
         MAX_USERNAME_LENGTH = 15;
 
@@ -83,8 +81,8 @@ public final class UserController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.insertInto(USERS)
-                                 .columns(USERS.USERNAME, USERS.PASSWORD_HASH)
+            rowsChanged = context.insertInto(USER)
+                                 .columns(USER.USERNAME, USER.PASSWORD_HASH)
                                  .values(username, passwordHash)
                                  .execute();
         } catch (SQLException | DataAccessException e) {
@@ -111,7 +109,7 @@ public final class UserController {
 
         Body<String> body = Body.success(content);
 
-        String locationString = "http://localhost:8080/api/users";
+        String locationString = "http://localhost:8080/api/user";
 
         URI location = URI.create(locationString);
 
@@ -143,9 +141,9 @@ public final class UserController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            record = context.select(USERS.ID, USERS.USERNAME)
-                            .from(USERS)
-                            .where(USERS.ID.eq(id))
+            record = context.select(USER.ID, USER.USERNAME)
+                            .from(USER)
+                            .where(USER.ID.eq(id))
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -194,7 +192,7 @@ public final class UserController {
         Map<Field<?>, Object> fieldToNewValue = new HashMap<>();
 
         if (username != null) {
-            fieldToNewValue.put(USERS.USERNAME, username);
+            fieldToNewValue.put(USER.USERNAME, username);
         } //end if
 
         if (password != null) {
@@ -202,7 +200,7 @@ public final class UserController {
 
             String passwordHash = BCrypt.hashpw(password, salt);
 
-            fieldToNewValue.put(USERS.PASSWORD_HASH, passwordHash);
+            fieldToNewValue.put(USER.PASSWORD_HASH, passwordHash);
         } //end if
 
         if (fieldToNewValue.isEmpty()) {
@@ -220,9 +218,9 @@ public final class UserController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.update(USERS)
+            rowsChanged = context.update(USER)
                                  .set(fieldToNewValue)
-                                 .where(USERS.ID.eq(id))
+                                 .where(USER.ID.eq(id))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -271,8 +269,8 @@ public final class UserController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
-            rowsChanged = context.delete(USERS)
-                                 .where(USERS.ID.eq(id))
+            rowsChanged = context.delete(USER)
+                                 .where(USER.ID.eq(id))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()

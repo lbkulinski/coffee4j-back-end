@@ -10,8 +10,6 @@ import org.jooq.impl.DSL;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import schema.generated.tables.Users;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -21,13 +19,13 @@ import java.util.Objects;
  * A user details service of the Coffee4j application.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 26, 2022
+ * @version May 17, 2022
  */
 public final class CustomUserDetailsService implements UserDetailsService {
     /**
-     * The {@code users} table of the {@link CustomUserDetailsService} class.
+     * The {@code user} table of the {@link CustomUserDetailsService} class.
      */
-    private static final Users USERS;
+    private static final schema.generated.tables.User USER;
 
     /**
      * The {@link Logger} of the {@link CustomUserDetailsService} class.
@@ -35,7 +33,7 @@ public final class CustomUserDetailsService implements UserDetailsService {
     private static final Logger LOGGER;
 
     static {
-        USERS = Users.USERS;
+        USER = schema.generated.tables.User.USER;
 
         LOGGER = LogManager.getLogger();
     } //static
@@ -57,8 +55,8 @@ public final class CustomUserDetailsService implements UserDetailsService {
             DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
 
             record = context.select()
-                            .from(USERS)
-                            .where(USERS.USERNAME.eq(username))
+                            .from(USER)
+                            .where(USER.USERNAME.eq(username))
                             .fetchOne();
         } catch (SQLException e) {
             LOGGER.atError()
@@ -74,11 +72,11 @@ public final class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException(message);
         } //end if
 
-        int recordId = record.get(USERS.ID);
+        int recordId = record.get(USER.ID);
 
-        String recordUsername = record.get(USERS.USERNAME);
+        String recordUsername = record.get(USER.USERNAME);
 
-        String recordPasswordHash = record.get(USERS.PASSWORD_HASH);
+        String recordPasswordHash = record.get(USER.PASSWORD_HASH);
 
         return new User(recordId, recordUsername, recordPasswordHash);
     } //loadUserByUsername
