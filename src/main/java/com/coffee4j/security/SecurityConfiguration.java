@@ -14,7 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * A security configuration of the Coffee4j application.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version April 1, 2022
+ * @version May 17, 2022
  */
 @Configuration
 @EnableWebSecurity
@@ -44,7 +44,7 @@ public class SecurityConfiguration {
             .csrf()
             .disable()
             .authorizeRequests()
-            .antMatchers(HttpMethod.POST, "/api/users")
+            .antMatchers(HttpMethod.POST, "/api/user")
             .permitAll()
             .anyRequest()
             .authenticated()
