@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `brew`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `brew` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
   `date_time` datetime NOT NULL,
   `coffee_id` int NOT NULL,
@@ -36,12 +36,12 @@ CREATE TABLE `brew` (
   `coffee_mass` decimal(10,2) NOT NULL,
   `water_mass` decimal(10,2) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `FK_brew_coffee_id_idx` (`coffee_id`),
-  KEY `FK_brew_water_id_idx` (`water_id`),
-  KEY `FK_brew_brewer_id_idx` (`brewer_id`),
-  KEY `FK_brew_filter_id_idx` (`filter_id`),
-  KEY `FK_brew_vessel_id_idx` (`vessel_id`),
-  KEY `FK_brew_user_id_idx` (`user_id`),
+  KEY `FK_brew_coffee_coffee_id_idx` (`coffee_id`),
+  KEY `FK_brew_water_water_id_idx` (`water_id`),
+  KEY `FK_brew_brewer_brewer_id_idx` (`brewer_id`),
+  KEY `FK_brew_filter_filter_id_idx` (`filter_id`),
+  KEY `FK_brew_vessel_vessel_id_idx` (`vessel_id`),
+  KEY `FK_brew_user_user_id_idx` (`user_id`),
   CONSTRAINT `FK_brew_brewer_brewer_id` FOREIGN KEY (`brewer_id`) REFERENCES `brewer` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `FK_brew_coffee_coffee_id` FOREIGN KEY (`coffee_id`) REFERENCES `coffee` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `FK_brew_filter_filter_id` FOREIGN KEY (`filter_id`) REFERENCES `filter` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -52,6 +52,15 @@ CREATE TABLE `brew` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `brew`
+--
+
+LOCK TABLES `brew` WRITE;
+/*!40000 ALTER TABLE `brew` DISABLE KEYS */;
+/*!40000 ALTER TABLE `brew` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `brewer`
 --
 
@@ -59,14 +68,23 @@ DROP TABLE IF EXISTS `brewer`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `brewer` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `FK_brewer_user_id_idx` (`user_id`),
+  KEY `FK_brewer_user_user_id_idx` (`user_id`),
   CONSTRAINT `FK_brewer_user_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `brewer`
+--
+
+LOCK TABLES `brewer` WRITE;
+/*!40000 ALTER TABLE `brewer` DISABLE KEYS */;
+/*!40000 ALTER TABLE `brewer` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `coffee`
@@ -76,7 +94,7 @@ DROP TABLE IF EXISTS `coffee`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `coffee` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
@@ -86,6 +104,15 @@ CREATE TABLE `coffee` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `coffee`
+--
+
+LOCK TABLES `coffee` WRITE;
+/*!40000 ALTER TABLE `coffee` DISABLE KEYS */;
+/*!40000 ALTER TABLE `coffee` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `filter`
 --
 
@@ -93,7 +120,7 @@ DROP TABLE IF EXISTS `filter`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `filter` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
@@ -103,6 +130,15 @@ CREATE TABLE `filter` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `filter`
+--
+
+LOCK TABLES `filter` WRITE;
+/*!40000 ALTER TABLE `filter` DISABLE KEYS */;
+/*!40000 ALTER TABLE `filter` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `user`
 --
 
@@ -110,12 +146,22 @@ DROP TABLE IF EXISTS `user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `username` varchar(15) COLLATE utf8_unicode_ci NOT NULL,
   `password_hash` varchar(60) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `user`
+--
+
+LOCK TABLES `user` WRITE;
+/*!40000 ALTER TABLE `user` DISABLE KEYS */;
+INSERT INTO `user` VALUES (1,'lbk','$2a$10$4u8FOBESGT6JGWODl6D80.a4BD3Sh3HbRYwXKEMneYkxLgPOxqeAO');
+/*!40000 ALTER TABLE `user` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `vessel`
@@ -135,6 +181,15 @@ CREATE TABLE `vessel` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `vessel`
+--
+
+LOCK TABLES `vessel` WRITE;
+/*!40000 ALTER TABLE `vessel` DISABLE KEYS */;
+/*!40000 ALTER TABLE `vessel` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `water`
 --
 
@@ -150,6 +205,15 @@ CREATE TABLE `water` (
   CONSTRAINT `FK_water_user_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `water`
+--
+
+LOCK TABLES `water` WRITE;
+/*!40000 ALTER TABLE `water` DISABLE KEYS */;
+/*!40000 ALTER TABLE `water` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -160,4 +224,4 @@ CREATE TABLE `water` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-05-17  9:16:49
+-- Dump completed on 2022-05-17 11:03:13

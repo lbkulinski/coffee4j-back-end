@@ -9,62 +9,12 @@
 <script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script>
     $(function () {
-        let schema = {
-            "name": "Logan's Schema",
-            "default": true,
-            "shared": true,
-            "fields": [
-                {
-                    "name": "date",
-                    "display_name": "Date",
-                    "type": "date"
-                },
-                {
-                    "name": "coffee",
-                    "display_name": "Coffee",
-                    "type": "string"
-                },
-                {
-                    "name": "water",
-                    "display_name": "Water",
-                    "type": "string"
-                },
-                {
-                    "name": "brewer",
-                    "display_name": "Brewer",
-                    "type": "string"
-                },
-                {
-                    "name": "filter",
-                    "display_name": "Filter",
-                    "type": "string"
-                },
-                {
-                    "name": "vessel",
-                    "display_name": "Vessel",
-                    "type": "string"
-                },
-                {
-                    "name": "coffee_mass",
-                    "display_name": "Coffee Mass",
-                    "type": "string"
-                },
-                {
-                    "name": "water_mass",
-                    "display_name": "Water Mass",
-                    "type": "string"
-                }
-            ]
-        };
-
-        let schema_string = JSON.stringify(schema);
-
         $.ajax({
             "type": "POST",
-            "url": "http://localhost:8080/api/schemas",
-            "contentType": "application/json",
-            "processData": false,
-            "data": schema_string,
+            "url": "http://localhost:8080/api/coffee",
+            "data": {
+                "name": "Karinga"
+            },
             "success": function (response) {
                 console.log(response);
             }
