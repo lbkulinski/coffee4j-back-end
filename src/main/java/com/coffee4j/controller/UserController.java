@@ -27,7 +27,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 17, 2022
+ * @version May 19, 2022
  */
 @RestController
 @RequestMapping("/api/user")
@@ -79,7 +79,7 @@ public final class UserController {
         int rowsChanged;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             rowsChanged = context.insertInto(USER)
                                  .columns(USER.USERNAME, USER.PASSWORD_HASH)
@@ -139,7 +139,7 @@ public final class UserController {
         Record record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             record = context.select(USER.ID, USER.USERNAME)
                             .from(USER)
@@ -216,7 +216,7 @@ public final class UserController {
         int rowsChanged;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             rowsChanged = context.update(USER)
                                  .set(fieldToNewValue)
@@ -267,7 +267,7 @@ public final class UserController {
         int rowsChanged;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             rowsChanged = context.delete(USER)
                                  .where(USER.ID.eq(id))

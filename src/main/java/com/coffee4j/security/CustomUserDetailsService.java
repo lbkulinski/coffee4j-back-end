@@ -52,7 +52,7 @@ public final class CustomUserDetailsService implements UserDetailsService {
         Record record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection, SQLDialect.MYSQL);
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             record = context.select()
                             .from(USER)

@@ -60,6 +60,11 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/libraries/jooq_code_generation.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.3.5</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

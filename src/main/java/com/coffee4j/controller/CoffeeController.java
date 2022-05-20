@@ -5,10 +5,8 @@ import com.coffee4j.Utilities;
 import com.coffee4j.security.User;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
+import org.jooq.*;
 import org.jooq.Record;
-import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.springframework.http.HttpHeaders;
@@ -51,7 +49,7 @@ public final class CoffeeController {
         CoffeeRecord record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection);
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             record = context.insertInto(COFFEE)
                             .columns(COFFEE.USER_ID, COFFEE.NAME)
@@ -119,7 +117,7 @@ public final class CoffeeController {
         Result<Record> result;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection);
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             result = context.select()
                             .from(COFFEE)
@@ -157,7 +155,7 @@ public final class CoffeeController {
         int rowsChanged;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection);
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             rowsChanged = context.update(COFFEE)
                                  .set(COFFEE.NAME, name)
@@ -204,7 +202,7 @@ public final class CoffeeController {
         int rowsChanged;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
-            DSLContext context = DSL.using(connection);
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             rowsChanged = context.deleteFrom(COFFEE)
                                  .where(COFFEE.ID.eq(id))
