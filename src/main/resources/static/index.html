@@ -10,11 +10,10 @@
 <script>
     $(function () {
         $.ajax({
-            "type": "GET",
+            "type": "DELETE",
             "url": "http://localhost:8080/api/brewer",
             "data": {
-                "id": 1,
-                "name": "april"
+                "id": 1
             },
             "success": function (response) {
                 console.log(response);
