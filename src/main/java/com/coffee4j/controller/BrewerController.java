@@ -159,8 +159,8 @@ public final class BrewerController {
 
             rowsChanged = context.update(BREWER)
                                  .set(BREWER.NAME, name)
-                                 .where(BREWER.USER_ID.eq(userId))
-                                 .and(BREWER.ID.eq(id))
+                                 .where(BREWER.ID.eq(id))
+                                 .and(BREWER.USER_ID.eq(userId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -205,8 +205,8 @@ public final class BrewerController {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             rowsChanged = context.deleteFrom(BREWER)
-                                 .where(BREWER.USER_ID.eq(userId))
-                                 .and(BREWER.ID.eq(id))
+                                 .where(BREWER.ID.eq(id))
+                                 .and(BREWER.USER_ID.eq(userId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
