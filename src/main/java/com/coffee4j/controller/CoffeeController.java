@@ -23,19 +23,37 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The REST controller used to interact with the Coffee4j coffee data.
+ *
+ * @author Logan Kulinski, lbkulinski@gmail.com
+ * @version May 19, 2022
+ */
 @RestController
 @RequestMapping("/api/coffee")
 public final class CoffeeController {
-    private static final Logger LOGGER;
-
+    /**
+     * The {@code coffee} table of the {@link CoffeeController} class.
+     */
     private static final Coffee COFFEE;
 
-    static {
-        LOGGER = LogManager.getLogger();
+    /**
+     * The {@link Logger} of the {@link CoffeeController} class.
+     */
+    private static final Logger LOGGER;
 
+    static {
         COFFEE = Coffee.COFFEE;
+
+        LOGGER = LogManager.getLogger();
     } //static
 
+    /**
+     * Attempts to create a new coffee. A name is required for creation.
+     *
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the create operation
+     */
     @PostMapping
     public ResponseEntity<Body<?>> create(@RequestParam String name) {
         User user = Utilities.getLoggedInUser();
@@ -93,6 +111,14 @@ public final class CoffeeController {
         return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
     } //create
 
+    /**
+     * Attempts to read the coffee data of the current logged-in user. An ID or name can be used to filter the data.
+     * Assuming data exists, the ID and name of each coffee are returned.
+     *
+     * @param id the ID to be used in the operation
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the read operation
+     */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name) {
@@ -114,12 +140,12 @@ public final class CoffeeController {
             condition = condition.and(COFFEE.NAME.eq(name));
         } //end if
 
-        Result<Record> result;
+        Result<? extends Record> result;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
-            result = context.select()
+            result = context.select(COFFEE.ID, COFFEE.NAME)
                             .from(COFFEE)
                             .where(condition)
                             .fetch();
@@ -142,6 +168,13 @@ public final class CoffeeController {
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
 
+    /**
+     * Attempts to update the coffee data of the current logged-in user. A coffee's name can be updated. An ID and name
+     * are required for updating.
+     *
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the update operation
+     */
     @PutMapping
     public ResponseEntity<Body<?>> update(@RequestParam int id, @RequestParam String name) {
         User user = Utilities.getLoggedInUser();
@@ -189,6 +222,11 @@ public final class CoffeeController {
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //update
 
+    /**
+     * Attempts to delete the coffee data of the current logged-in user. An ID is required for deletion.
+     *
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
     @DeleteMapping
     public ResponseEntity<Body<?>> delete(@RequestParam int id) {
         User user = Utilities.getLoggedInUser();
