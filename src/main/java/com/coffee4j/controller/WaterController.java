@@ -13,8 +13,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import schema.generated.tables.Coffee;
-import schema.generated.tables.records.CoffeeRecord;
+import schema.generated.tables.Water;
+import schema.generated.tables.records.WaterRecord;
 
 import java.net.URI;
 import java.sql.Connection;
@@ -24,32 +24,32 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The REST controller used to interact with the Coffee4j coffee data.
+ * The REST controller used to interact with the Coffee4j water data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
  * @version May 19, 2022
  */
 @RestController
-@RequestMapping("/api/coffee")
-public final class CoffeeController {
+@RequestMapping("/api/water")
+public final class WaterController {
     /**
-     * The {@code coffee} table of the {@link CoffeeController} class.
+     * The {@code water} table of the {@link WaterController} class.
      */
-    private static final Coffee COFFEE;
+    private static final Water WATER;
 
     /**
-     * The {@link Logger} of the {@link CoffeeController} class.
+     * The {@link Logger} of the {@link WaterController} class.
      */
     private static final Logger LOGGER;
 
     static {
-        COFFEE = Coffee.COFFEE;
+        WATER = Water.WATER;
 
         LOGGER = LogManager.getLogger();
     } //static
 
     /**
-     * Attempts to create a new coffee. A name is required for creation.
+     * Attempts to create a new water recipe. A name is required for creation.
      *
      * @param name the name to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the create operation
@@ -64,22 +64,22 @@ public final class CoffeeController {
 
         int userId = user.id();
 
-        CoffeeRecord record;
+        WaterRecord record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
-            record = context.insertInto(COFFEE)
-                            .columns(COFFEE.USER_ID, COFFEE.NAME)
+            record = context.insertInto(WATER)
+                            .columns(WATER.USER_ID, WATER.NAME)
                             .values(userId, name)
-                            .returning(COFFEE.ID)
+                            .returning(WATER.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
                   .log();
 
-            String content = "A coffee with the specified parameters could not be created";
+            String content = "A water with the specified parameters could not be created";
 
             Body<String> body = Body.error(content);
 
@@ -87,20 +87,20 @@ public final class CoffeeController {
         } //end try catch
 
         if (record == null) {
-            String content = "A coffee with the specified parameters could not be created";
+            String content = "A water with the specified parameters could not be created";
 
             Body<String> body = Body.error(content);
 
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        String content = "A coffee with the specified parameters was successfully created";
+        String content = "A water with the specified parameters was successfully created";
 
         Body<String> body = Body.success(content);
 
         int id = record.getId();
 
-        String locationString = "http://localhost:8080/api/coffee?id=%d".formatted(id);
+        String locationString = "http://localhost:8080/api/water?id=%d".formatted(id);
 
         URI location = URI.create(locationString);
 
@@ -112,8 +112,8 @@ public final class CoffeeController {
     } //create
 
     /**
-     * Attempts to read the coffee data of the current logged-in user. An ID or name can be used to filter the data.
-     * Assuming data exists, the ID and name of each coffee are returned.
+     * Attempts to read the water data of the current logged-in user. An ID or name can be used to filter the data.
+     * Assuming data exists, the ID and name of each water are returned.
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
@@ -130,14 +130,14 @@ public final class CoffeeController {
 
         int userId = user.id();
 
-        Condition condition = COFFEE.USER_ID.eq(userId);
+        Condition condition = WATER.USER_ID.eq(userId);
 
         if (id != null) {
-            condition = condition.and(COFFEE.ID.eq(id));
+            condition = condition.and(WATER.ID.eq(id));
         } //end if
 
         if (name != null) {
-            condition = condition.and(COFFEE.NAME.eq(name));
+            condition = condition.and(WATER.NAME.eq(name));
         } //end if
 
         Result<? extends Record> result;
@@ -145,8 +145,8 @@ public final class CoffeeController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
-            result = context.select(COFFEE.ID, COFFEE.NAME)
-                            .from(COFFEE)
+            result = context.select(WATER.ID, WATER.NAME)
+                            .from(WATER)
                             .where(condition)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
@@ -154,7 +154,7 @@ public final class CoffeeController {
                   .withThrowable(e)
                   .log();
 
-            String content = "A coffee with the specified parameters could not be read";
+            String content = "A water with the specified parameters could not be read";
 
             Body<String> body = Body.error(content);
 
@@ -169,7 +169,7 @@ public final class CoffeeController {
     } //read
 
     /**
-     * Attempts to update the coffee data of the current logged-in user. A coffee's name can be updated. An ID and name
+     * Attempts to update the water data of the current logged-in user. A water's name can be updated. An ID and name
      * are required for updating.
      *
      * @param name the name to be used in the operation
@@ -190,17 +190,17 @@ public final class CoffeeController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
-            rowsChanged = context.update(COFFEE)
-                                 .set(COFFEE.NAME, name)
-                                 .where(COFFEE.ID.eq(id))
-                                 .and(COFFEE.USER_ID.eq(userId))
+            rowsChanged = context.update(WATER)
+                                 .set(WATER.NAME, name)
+                                 .where(WATER.ID.eq(id))
+                                 .and(WATER.USER_ID.eq(userId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
                   .log();
 
-            String content = "A coffee with the specified parameters could not be updated";
+            String content = "A water with the specified parameters could not be updated";
 
             Body<String> body = Body.error(content);
 
@@ -208,14 +208,14 @@ public final class CoffeeController {
         } //end try catch
 
         if (rowsChanged == 0) {
-            String content = "A coffee with the specified parameters could not be updated";
+            String content = "A water with the specified parameters could not be updated";
 
             Body<String> body = Body.error(content);
 
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        String content = "A coffee with the specified parameters was successfully updated";
+        String content = "A water with the specified parameters was successfully updated";
 
         Body<String> body = Body.success(content);
 
@@ -223,7 +223,7 @@ public final class CoffeeController {
     } //update
 
     /**
-     * Attempts to delete the coffee data of the current logged-in user. A single coffee can be deleted. An ID is
+     * Attempts to delete the water data of the current logged-in user. A single water can be deleted. An ID is
      * required for deletion.
      *
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
@@ -243,16 +243,16 @@ public final class CoffeeController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
-            rowsChanged = context.deleteFrom(COFFEE)
-                                 .where(COFFEE.ID.eq(id))
-                                 .and(COFFEE.USER_ID.eq(userId))
+            rowsChanged = context.deleteFrom(WATER)
+                                 .where(WATER.ID.eq(id))
+                                 .and(WATER.USER_ID.eq(userId))
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
                   .log();
 
-            String content = "A coffee with the specified parameters could not be deleted";
+            String content = "A water with the specified parameters could not be deleted";
 
             Body<String> body = Body.error(content);
 
@@ -260,14 +260,14 @@ public final class CoffeeController {
         } //end try catch
 
         if (rowsChanged == 0) {
-            String content = "A coffee with the specified parameters could not be deleted";
+            String content = "A water with the specified parameters could not be deleted";
 
             Body<String> body = Body.error(content);
 
             return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
-        String content = "A coffee with the specified parameters was successfully deleted";
+        String content = "A water with the specified parameters was successfully deleted";
 
         Body<String> body = Body.success(content);
 
