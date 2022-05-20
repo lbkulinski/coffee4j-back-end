@@ -191,4 +191,50 @@ public final class FilterController {
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //update
+
+    @DeleteMapping
+    public ResponseEntity<Body<?>> delete(@RequestParam int id) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        int userId = user.id();
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
+
+            rowsChanged = context.deleteFrom(FILTER)
+                                 .where(FILTER.ID.eq(id))
+                                 .and(FILTER.USER_ID.eq(userId))
+                                 .execute();
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "A filter with the specified parameters could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "A filter with the specified parameters could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "A filter with the specified parameters was successfully deleted";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
+    } //delete
 }
