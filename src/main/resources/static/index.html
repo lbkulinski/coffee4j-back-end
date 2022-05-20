@@ -10,9 +10,10 @@
 <script>
     $(function () {
         $.ajax({
-            "type": "POST",
+            "type": "GET",
             "url": "http://localhost:8080/api/brewer",
             "data": {
+                "id": 1,
                 "name": "april"
             },
             "success": function (response) {
