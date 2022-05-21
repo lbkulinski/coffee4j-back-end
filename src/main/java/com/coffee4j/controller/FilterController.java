@@ -26,11 +26,23 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The REST controller used to interact with the Coffee4j filter data.
+ *
+ * @author Logan Kulinski, lbkulinski@gmail.com
+ * @version May 20, 2022
+ */
 @RestController
 @RequestMapping("/api/filter")
 public final class FilterController {
+    /**
+     * The {@code filter} table of the {@link FilterController} class.
+     */
     private static final Filter FILTER;
 
+    /**
+     * The {@link Logger} of the {@link FilterController} class.
+     */
     private static final Logger LOGGER;
 
     static {
@@ -39,6 +51,12 @@ public final class FilterController {
         LOGGER = LogManager.getLogger();
     } //static
 
+    /**
+     * Attempts to create a new filter. A name is required for creation.
+     *
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the create operation
+     */
     @PostMapping
     public ResponseEntity<Body<?>> create(@RequestParam String name) {
         User user = Utilities.getLoggedInUser();
@@ -96,6 +114,14 @@ public final class FilterController {
         return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
     } //create
 
+    /**
+     * Attempts to read the filter data of the current logged-in user. An ID or name can be used to filter the data.
+     * Assuming data exists, the ID and name of each filter are returned.
+     *
+     * @param id the ID to be used in the operation
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the read operation
+     */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name) {
@@ -145,6 +171,13 @@ public final class FilterController {
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
 
+    /**
+     * Attempts to update the filter data of the current logged-in user. A filter's name can be updated. An ID and name
+     * are required for updating.
+     *
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the update operation
+     */
     @PutMapping
     public ResponseEntity<Body<?>> update(@RequestParam int id, @RequestParam String name) {
         User user = Utilities.getLoggedInUser();
@@ -192,6 +225,12 @@ public final class FilterController {
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //update
 
+    /**
+     * Attempts to delete the filter data of the current logged-in user. A single filter can be deleted. An ID is
+     * required for deletion.
+     *
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
     @DeleteMapping
     public ResponseEntity<Body<?>> delete(@RequestParam int id) {
         User user = Utilities.getLoggedInUser();

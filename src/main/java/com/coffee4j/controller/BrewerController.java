@@ -23,11 +23,23 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The REST controller used to interact with the Coffee4j brewer data.
+ *
+ * @author Logan Kulinski, lbkulinski@gmail.com
+ * @version May 20, 2022
+ */
 @RestController
 @RequestMapping("/api/brewer")
 public final class BrewerController {
+    /**
+     * The {@code brewer} table of the {@link BrewerController} class.
+     */
     private static final Brewer BREWER;
 
+    /**
+     * The {@link Logger} of the {@link BrewerController} class.
+     */
     private static final Logger LOGGER;
 
     static {
@@ -36,6 +48,12 @@ public final class BrewerController {
         LOGGER = LogManager.getLogger();
     } //static
 
+    /**
+     * Attempts to create a new brewer. A name is required for creation.
+     *
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the create operation
+     */
     @PostMapping
     public ResponseEntity<Body<?>> create(@RequestParam String name) {
         User user = Utilities.getLoggedInUser();
@@ -93,6 +111,14 @@ public final class BrewerController {
         return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
     } //create
 
+    /**
+     * Attempts to read the brewer data of the current logged-in user. An ID or name can be used to filter the data.
+     * Assuming data exists, the ID and name of each brewer are returned.
+     *
+     * @param id the ID to be used in the operation
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the read operation
+     */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name) {
@@ -142,6 +168,13 @@ public final class BrewerController {
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
 
+    /**
+     * Attempts to update the brewer data of the current logged-in user. A brewer's name can be updated. An ID and name
+     * are required for updating.
+     *
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the update operation
+     */
     @PutMapping
     public ResponseEntity<Body<?>> update(@RequestParam int id, @RequestParam String name) {
         User user = Utilities.getLoggedInUser();
@@ -189,6 +222,12 @@ public final class BrewerController {
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //update
 
+    /**
+     * Attempts to delete the brewer data of the current logged-in user. A single brewer can be deleted. An ID is
+     * required for deletion.
+     *
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
     @DeleteMapping
     public ResponseEntity<Body<?>> delete(@RequestParam int id) {
         User user = Utilities.getLoggedInUser();
