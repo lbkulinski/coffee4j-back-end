@@ -27,7 +27,7 @@ SET default_table_access_method = heap;
 CREATE TABLE public.brew (
     id integer NOT NULL,
     user_id integer NOT NULL,
-    "timestamp" timestamp with time zone NOT NULL,
+    "timestamp" timestamp without time zone NOT NULL,
     coffee_id integer NOT NULL,
     water_id integer NOT NULL,
     brewer_id integer NOT NULL,
@@ -326,6 +326,7 @@ ALTER TABLE ONLY public.water ALTER COLUMN id SET DEFAULT nextval('public.water_
 --
 
 COPY public.brew (id, user_id, "timestamp", coffee_id, water_id, brewer_id, filter_id, vessel_id, coffee_mass, water_mass) FROM stdin;
+1	1	2022-05-21 21:49:24.46	1	1	1	1	1	18	300
 \.
 
 
@@ -334,6 +335,7 @@ COPY public.brew (id, user_id, "timestamp", coffee_id, water_id, brewer_id, filt
 --
 
 COPY public.brewer (id, user_id, name) FROM stdin;
+1	1	april
 \.
 
 
@@ -351,6 +353,7 @@ COPY public.coffee (id, user_id, name) FROM stdin;
 --
 
 COPY public.filter (id, user_id, name) FROM stdin;
+1	1	Kalita Wave 185
 \.
 
 
@@ -359,7 +362,7 @@ COPY public.filter (id, user_id, name) FROM stdin;
 --
 
 COPY public."user" (id, username, password_hash) FROM stdin;
-1	lbk	$2a$10$xPChE17KBspBflG6ea6Iyea9nL7HESUB0UJqI/MElKCgdCUQK7IqO
+1	lbk	$2a$10$K/jhrTvasup0ZGIBawMRZ.3sYWYJxgnaFLu85nMW5WmQ8Tc4Y287u
 \.
 
 
@@ -368,6 +371,7 @@ COPY public."user" (id, username, password_hash) FROM stdin;
 --
 
 COPY public.vessel (id, user_id, name) FROM stdin;
+1	1	Fellow Mighty Small Glass Carafe
 \.
 
 
@@ -376,7 +380,7 @@ COPY public.vessel (id, user_id, name) FROM stdin;
 --
 
 COPY public.water (id, user_id, name) FROM stdin;
-2	1	Barista Hustle
+1	1	Barista Hustle
 \.
 
 
@@ -384,14 +388,14 @@ COPY public.water (id, user_id, name) FROM stdin;
 -- Name: brew_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.brew_id_seq', 1, false);
+SELECT pg_catalog.setval('public.brew_id_seq', 1, true);
 
 
 --
 -- Name: brewer_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.brewer_id_seq', 1, false);
+SELECT pg_catalog.setval('public.brewer_id_seq', 1, true);
 
 
 --
@@ -405,28 +409,28 @@ SELECT pg_catalog.setval('public.coffee_id_seq', 1, true);
 -- Name: filter_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.filter_id_seq', 1, false);
+SELECT pg_catalog.setval('public.filter_id_seq', 1, true);
 
 
 --
 -- Name: user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.user_id_seq', 2, true);
+SELECT pg_catalog.setval('public.user_id_seq', 1, true);
 
 
 --
 -- Name: vessel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.vessel_id_seq', 1, false);
+SELECT pg_catalog.setval('public.vessel_id_seq', 1, true);
 
 
 --
 -- Name: water_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.water_id_seq', 3, true);
+SELECT pg_catalog.setval('public.water_id_seq', 1, true);
 
 
 --
