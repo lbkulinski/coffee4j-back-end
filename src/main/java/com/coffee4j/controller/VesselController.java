@@ -48,6 +48,12 @@ public final class VesselController {
         LOGGER = LogManager.getLogger();
     } //static
 
+    /**
+     * Attempts to create a new vessel. A name is required for creation.
+     *
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the create operation
+     */
     @PostMapping
     public ResponseEntity<Body<?>> create(@RequestParam String name) {
         User user = Utilities.getLoggedInUser();
@@ -105,6 +111,14 @@ public final class VesselController {
         return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
     } //create
 
+    /**
+     * Attempts to read the vessel data of the current logged-in user. An ID or name can be used to filter the data.
+     * Assuming data exists, the ID and name of each vessel are returned.
+     *
+     * @param id the ID to be used in the operation
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the read operation
+     */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name) {
@@ -153,4 +167,110 @@ public final class VesselController {
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
+
+    /**
+     * Attempts to update the vessel data of the current logged-in user. A vessel's name can be updated. An ID and name
+     * are required for updating.
+     *
+     * @param name the name to be used in the operation
+     * @return a {@link ResponseEntity} containing the outcome of the update operation
+     */
+    @PutMapping
+    public ResponseEntity<Body<?>> update(@RequestParam int id, @RequestParam String name) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        int userId = user.id();
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
+
+            rowsChanged = context.update(VESSEL)
+                                 .set(VESSEL.NAME, name)
+                                 .where(VESSEL.ID.eq(id))
+                                 .and(VESSEL.USER_ID.eq(userId))
+                                 .execute();
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "A vessel with the specified parameters could not be updated";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "A vessel with the specified parameters could not be updated";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "A vessel with the specified parameters was successfully updated";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
+    } //update
+
+    /**
+     * Attempts to delete the vessel data of the current logged-in user. A single vessel can be deleted. An ID is
+     * required for deletion.
+     *
+     * @return a {@link ResponseEntity} containing the outcome of the delete operation
+     */
+    @DeleteMapping
+    public ResponseEntity<Body<?>> delete(@RequestParam int id) {
+        User user = Utilities.getLoggedInUser();
+
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        int userId = user.id();
+
+        int rowsChanged;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
+
+            rowsChanged = context.deleteFrom(VESSEL)
+                                 .where(VESSEL.ID.eq(id))
+                                 .and(VESSEL.USER_ID.eq(userId))
+                                 .execute();
+        } catch (SQLException | DataAccessException e) {
+            LOGGER.atError()
+                  .withThrowable(e)
+                  .log();
+
+            String content = "A vessel with the specified parameters could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        } //end try catch
+
+        if (rowsChanged == 0) {
+            String content = "A vessel with the specified parameters could not be deleted";
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        } //end if
+
+        String content = "A vessel with the specified parameters was successfully deleted";
+
+        Body<String> body = Body.success(content);
+
+        return new ResponseEntity<>(body, HttpStatus.OK);
+    } //delete
 }
