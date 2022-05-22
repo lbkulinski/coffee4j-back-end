@@ -16,7 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import schema.generated.tables.Brew;
+import schema.generated.tables.*;
 import schema.generated.tables.records.BrewRecord;
 
 import java.math.BigDecimal;
@@ -34,10 +34,30 @@ import java.util.Map;
 public final class BrewController {
     private static final Brew BREW;
 
+    private static final Coffee COFFEE;
+
+    private static final Water WATER;
+
+    private static final Brewer BREWER;
+
+    private static final Filter FILTER;
+
+    private static final Vessel VESSEL;
+
     private static final Logger LOGGER;
 
     static {
         BREW = Brew.BREW;
+
+        COFFEE = Coffee.COFFEE;
+
+        WATER = Water.WATER;
+
+        BREWER = Brewer.BREWER;
+
+        FILTER = Filter.FILTER;
+
+        VESSEL = Vessel.VESSEL;
 
         LOGGER = LogManager.getLogger();
     } //static
@@ -196,13 +216,21 @@ public final class BrewController {
             condition = condition.and(BREW.WATER_MASS.eq(waterMass));
         } //end if
 
-        Result<Record> result;
+        Result<? extends Record> result;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
-            result = context.select()
+            result = context.select(BREW.ID, BREW.TIMESTAMP, BREW.COFFEE_ID, COFFEE.NAME.as("coffee_name"),
+                                    BREW.WATER_ID, WATER.NAME.as("water_name"), BREW.BREWER_ID,
+                                    BREWER.NAME.as("brewer_name"), BREW.FILTER_ID, FILTER.NAME.as("filter_name"),
+                                    BREW.VESSEL_ID, VESSEL.NAME.as("vessel_name"))
                             .from(BREW)
+                            .join(COFFEE).on(COFFEE.ID.eq(BREW.COFFEE_ID))
+                            .join(WATER).on(WATER.ID.eq(BREW.WATER_ID))
+                            .join(BREWER).on(BREWER.ID.eq(BREW.BREWER_ID))
+                            .join(FILTER).on(FILTER.ID.eq(BREW.FILTER_ID))
+                            .join(VESSEL).on(VESSEL.ID.eq(BREW.VESSEL_ID))
                             .where(condition)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
