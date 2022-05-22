@@ -27,7 +27,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j water data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 20, 2022
+ * @version May 22, 2022
  */
 @RestController
 @RequestMapping("/api/water")
@@ -172,6 +172,7 @@ public final class WaterController {
      * Attempts to update the water data of the current logged-in user. A water's name can be updated. An ID and name
      * are required for updating.
      *
+     * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
@@ -226,6 +227,7 @@ public final class WaterController {
      * Attempts to delete the water data of the current logged-in user. A single water can be deleted. An ID is
      * required for deletion.
      *
+     * @param id the ID to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
      */
     @DeleteMapping

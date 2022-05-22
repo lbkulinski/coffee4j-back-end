@@ -27,7 +27,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j coffee data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 20, 2022
+ * @version May 22, 2022
  */
 @RestController
 @RequestMapping("/api/coffee")
@@ -172,6 +172,7 @@ public final class CoffeeController {
      * Attempts to update the coffee data of the current logged-in user. A coffee's name can be updated. An ID and name
      * are required for updating.
      *
+     * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
@@ -226,6 +227,7 @@ public final class CoffeeController {
      * Attempts to delete the coffee data of the current logged-in user. A single coffee can be deleted. An ID is
      * required for deletion.
      *
+     * @param id the ID to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
      */
     @DeleteMapping

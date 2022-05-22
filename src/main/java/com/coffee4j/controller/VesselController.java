@@ -27,7 +27,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j vessel data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 21, 2022
+ * @version May 22, 2022
  */
 @RestController
 @RequestMapping("/api/vessel")
@@ -172,6 +172,7 @@ public final class VesselController {
      * Attempts to update the vessel data of the current logged-in user. A vessel's name can be updated. An ID and name
      * are required for updating.
      *
+     * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
@@ -226,6 +227,7 @@ public final class VesselController {
      * Attempts to delete the vessel data of the current logged-in user. A single vessel can be deleted. An ID is
      * required for deletion.
      *
+     * @param id the ID to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the delete operation
      */
     @DeleteMapping
