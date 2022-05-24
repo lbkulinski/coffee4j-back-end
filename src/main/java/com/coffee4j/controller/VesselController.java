@@ -27,11 +27,16 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j vessel data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 22, 2022
+ * @version May 24, 2022
  */
 @RestController
 @RequestMapping("/api/vessel")
 public final class VesselController {
+    /**
+     * The maximum name length of the {@link VesselController} class.
+     */
+    private static final int MAX_NAME_LENGTH;
+
     /**
      * The {@code vessel} table of the {@link VesselController} class.
      */
@@ -43,6 +48,8 @@ public final class VesselController {
     private static final Logger LOGGER;
 
     static {
+        MAX_NAME_LENGTH = 45;
+
         VESSEL = Vessel.VESSEL;
 
         LOGGER = LogManager.getLogger();
@@ -60,6 +67,14 @@ public final class VesselController {
 
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        if (name.length() > MAX_NAME_LENGTH) {
+            String content = "The specified name must not be greater than %d characters".formatted(MAX_NAME_LENGTH);
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
         int userId = user.id();
@@ -182,6 +197,14 @@ public final class VesselController {
 
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        } //end if
+
+        if (name.length() > MAX_NAME_LENGTH) {
+            String content = "The specified name must not be greater than %d characters".formatted(MAX_NAME_LENGTH);
+
+            Body<String> body = Body.error(content);
+
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         } //end if
 
         int userId = user.id();
