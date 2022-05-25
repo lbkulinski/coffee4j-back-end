@@ -8,35 +8,7 @@
 </body>
 <script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script>
-    function createBrew() {
-        let date = new Date();
-
-        let timestamp = date.toISOString();
-
-        let lastIndex = timestamp.length - 2;
-
-        timestamp = timestamp.substring(0, lastIndex);
-
-        $.post({
-            "url": "http://localhost:8080/api/brew",
-            "data": {
-                "timestamp": timestamp,
-                "coffee_id": 1,
-                "water_id": 1,
-                "brewer_id": 1,
-                "filter_id": 1,
-                "vessel_id": 1,
-                "coffee_mass": 18.0,
-                "water_mass": 300.0
-            },
-            "success": function (response) {
-                console.log(response);
-            }
-        });
-    } //createBrew
-
     $(function () {
-        createBrew();
     });
 </script>
 </html>
