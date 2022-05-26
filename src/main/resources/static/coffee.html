@@ -12,9 +12,6 @@
 <body>
 <div class="container mt-3">
     <div class="card">
-        <div class="card-header">
-            Coffees
-        </div>
         <div class="card-body">
             <table class="table table-striped-columns table-hover">
                 <thead>
@@ -48,18 +45,30 @@
 
         let nameData = $("<td>").text(coffee.name);
 
-        let editIcon = $("<i>").addClass("fa-solid fa-pen-to-square");
+        let editIcon = $("<i>").addClass("fa-solid fa-pen-to-square").css("color", "black");
 
-        let editAnchor = $("<a>").addClass("mr-3")
-                                 .attr("href", "javascript:void(0);")
+        let editAnchor = $("<a>").attr("href", "javascript:void(0);")
                                  .append(editIcon);
 
-        let deleteIcon = $("<i>").addClass("fa-solid fa-trash-can");
+        let editColumn = $("<div>").addClass("col")
+                                   .append(editAnchor);
+
+        let deleteIcon = $("<i>").addClass("fa-solid fa-trash-can")
+                                 .css("color", "black");
 
         let deleteAnchor = $("<a>").attr("href", "javascript:void(0);")
                                    .append(deleteIcon);
 
-        let actionsData = $("<td>").append(editAnchor, deleteAnchor);
+        let deleteColumn = $("<div>").addClass("col")
+                                     .append(deleteAnchor);
+
+        let row = $("<div>").addClass("row row-cols-auto")
+                            .append(editColumn, deleteColumn);
+
+        let container = $("<div>").addClass("container")
+                                  .append(row);
+
+        let actionsData = $("<td>").append(container);
 
         return $("<tr>").append(nameData, actionsData);
     } //buildRow
