@@ -45,6 +45,11 @@
 <div class="container mt-3">
     <div class="card">
         <div class="card-body">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button id="button_add" class="btn btn-dark" type="button">
+                    Add
+                </button>
+            </div>
             <table class="table table-striped-columns table-hover">
                 <thead>
                 <tr>
@@ -62,6 +67,32 @@
         </div>
     </div>
 </div>
+<div id="div_modal_add" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Add
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label for="input_add_coffee" class="form-label">
+                    Coffee
+                </label>
+                <input id="input_add_coffee" class="form-control" type="text">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button id="button_save_add" type="button" class="btn btn-primary">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <div id="div_modal_edit" class="modal fade" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -72,10 +103,10 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <label for="input_coffee" class="form-label">
+                <label for="input_edit_coffee" class="form-label">
                     Coffee
                 </label>
-                <input id="input_coffee" class="form-control" type="text">
+                <input id="input_edit_coffee" class="form-control" type="text">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -168,7 +199,7 @@
                                  .append(editIcon);
 
         editAnchor.click(function () {
-            $("#input_coffee").val(coffee.name);
+            $("#input_edit_coffee").val(coffee.name);
 
             $("#div_modal_edit").data("coffee_id", coffee.id)
                                 .modal("show");
@@ -231,12 +262,16 @@
     $(function () {
         showTable();
 
+        $("#button_add").click(function () {
+            $("#div_modal_add").modal("show");
+        });
+
         $("#button_save_edit").click(function () {
             let editModalDiv = $("#div_modal_edit");
 
             let id = editModalDiv.data("coffee_id");
 
-            let name = $("#input_coffee").val();
+            let name = $("#input_edit_coffee").val();
 
             if (!id) {
                 $("#toast_edit_error").toast("show");
