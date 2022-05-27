@@ -15,7 +15,8 @@
         <a class="navbar-brand" href="#">
             Coffee4j
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
@@ -45,6 +46,9 @@
 <div class="container mt-3">
     <div class="card">
         <div class="card-body">
+            <h5 class="card-title">
+                Coffees
+            </h5>
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                 <button id="button_add" class="btn btn-dark" type="button">
                     Add
@@ -80,7 +84,8 @@
                 <label for="input_add_coffee" class="form-label">
                     Coffee
                 </label>
-                <input id="input_add_coffee" class="form-control" type="text">
+                <!-- TODO: Add character counter -->
+                <input id="input_add_coffee" class="form-control" type="text" maxlength="45">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -106,7 +111,8 @@
                 <label for="input_edit_coffee" class="form-label">
                     Coffee
                 </label>
-                <input id="input_edit_coffee" class="form-control" type="text">
+                <!-- TODO: Add character counter -->
+                <input id="input_edit_coffee" class="form-control" type="text" maxlength="45">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -144,18 +150,36 @@
 </div>
 <div aria-live="polite" aria-atomic="true" class="position-relative">
     <div class="toast-container position-absolute p-3">
-        <div id="toast_edit_success" class="toast">
+        <div id="toast_add_success" class="toast">
             <div class="toast-body">
-                The coffee was successfully saved.
+                The coffee was successfully added.
             </div>
         </div>
     </div>
 </div>
 <div aria-live="polite" aria-atomic="true" class="position-relative">
     <div class="toast-container position-absolute p-3">
-        <div id="toast_edit_error" class="toast">
+        <div id="toast_add_error" class="toast bg-danger">
             <div class="toast-body">
-                The coffee could not be saved. Please try again later.
+                The coffee could not be added. Please try again later.
+            </div>
+        </div>
+    </div>
+</div>
+<div aria-live="polite" aria-atomic="true" class="position-relative">
+    <div class="toast-container position-absolute p-3">
+        <div id="toast_edit_success" class="toast">
+            <div class="toast-body">
+                The coffee was successfully edited.
+            </div>
+        </div>
+    </div>
+</div>
+<div aria-live="polite" aria-atomic="true" class="position-relative">
+    <div class="toast-container position-absolute p-3">
+        <div id="toast_edit_error" class="toast bg-danger">
+            <div class="toast-body">
+                The coffee could not be edited. Please try again later.
             </div>
         </div>
     </div>
@@ -171,7 +195,7 @@
 </div>
 <div aria-live="polite" aria-atomic="true" class="position-relative">
     <div class="toast-container position-absolute p-3">
-        <div id="toast_delete_error" class="toast">
+        <div id="toast_delete_error" class="toast bg-danger">
             <div class="toast-body">
                 The coffee could not be deleted. Please try again later.
             </div>
@@ -263,7 +287,31 @@
         showTable();
 
         $("#button_add").click(function () {
+            $("#input_add_coffee").val("");
+
             $("#div_modal_add").modal("show");
+        });
+
+        $("#button_save_add").click(function () {
+            let name = $("#input_add_coffee").val();
+
+            $("#div_modal_add").modal("hide");
+
+            $.ajax({
+                "type": "POST",
+                "url": "http://localhost:8080/api/coffee",
+                "data": {
+                    "name": name
+                },
+                "success": function () {
+                    showTable();
+
+                    $("#toast_add_success").toast("show");
+                },
+                "error": function () {
+                    $("#toast_add_error").toast("show");
+                }
+            });
         });
 
         $("#button_save_edit").click(function () {
@@ -276,6 +324,8 @@
             if (!id) {
                 $("#toast_edit_error").toast("show");
             } //end if
+
+            editModalDiv.modal("hide");
 
             $.ajax({
                 "type": "PUT",
@@ -293,8 +343,6 @@
                     $("#toast_edit_error").toast("show");
                 }
             });
-
-            editModalDiv.modal("hide");
         });
 
         $("#button_yes_delete").click(function () {
@@ -306,6 +354,8 @@
                 $("#toast_delete_error").toast("show");
             } //end if
 
+            deleteModalDiv.modal("hide");
+
             $.ajax({
                 "type": "DELETE",
                 "url": "http://localhost:8080/api/coffee",
@@ -315,14 +365,12 @@
                 "success": function () {
                     showTable();
 
-                    setTimeout(() => document.location.reload(), 3000);
+                    $("#toast_delete_success").toast("show");
                 },
                 "error": function () {
                     $("#toast_delete_error").toast("show");
                 }
             });
-
-            deleteModalDiv.modal("hide");
         });
     });
 </script>
