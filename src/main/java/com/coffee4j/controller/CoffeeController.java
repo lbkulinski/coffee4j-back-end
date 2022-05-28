@@ -160,9 +160,7 @@ public final class CoffeeController {
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(required = false) String name,
-                                        @RequestParam(defaultValue = "0") int offset,
-                                        @RequestParam(defaultValue = "25") int limit) {
+                                        @RequestParam(required = false) String name) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -171,9 +169,7 @@ public final class CoffeeController {
 
         int userId = user.id();
 
-        Condition condition = COFFEE.ID.greaterThan(offset);
-
-        condition = condition.and(COFFEE.USER_ID.eq(userId));
+        Condition condition = COFFEE.USER_ID.eq(userId);
 
         if (id != null) {
             condition = condition.and(COFFEE.ID.eq(id));
@@ -191,7 +187,6 @@ public final class CoffeeController {
             result = context.select(COFFEE.ID, COFFEE.NAME)
                             .from(COFFEE)
                             .where(condition)
-                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
