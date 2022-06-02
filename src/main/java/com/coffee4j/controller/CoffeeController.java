@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j coffee data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @version June 2, 2022
  */
 @RestController
 @RequestMapping("/api/coffee")
@@ -156,11 +156,15 @@ public final class CoffeeController {
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
+     * @param offset the offset to be used in the operation
+     * @param limit the limit to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(required = false) String name) {
+                                        @RequestParam(required = false) String name,
+                                        @RequestParam(defaultValue = "0") int offset,
+                                        @RequestParam(defaultValue = "25") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -169,7 +173,9 @@ public final class CoffeeController {
 
         int userId = user.id();
 
-        Condition condition = COFFEE.USER_ID.eq(userId);
+        Condition condition = COFFEE.ID.greaterThan(offset);
+
+        condition = condition.and(COFFEE.USER_ID.eq(userId));
 
         if (id != null) {
             condition = condition.and(COFFEE.ID.eq(id));
@@ -187,6 +193,7 @@ public final class CoffeeController {
             result = context.select(COFFEE.ID, COFFEE.NAME)
                             .from(COFFEE)
                             .where(condition)
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
