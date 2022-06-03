@@ -68,6 +68,30 @@
                 <tbody id="tbody_names">
                 </tbody>
             </table>
+            <nav aria-label="Page navigation example">
+                <ul class="pagination justify-content-end">
+                    <li class="page-item">
+                        <a id="anchor_first_page" class="page-link" href="#">
+                            <i class="fa fa-angles-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a id="anchor_previous_page" class="page-link" href="#">
+                            <i class="fa fa-angle-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a id="anchor_next_page" class="page-link" href="#">
+                            <i class="fa fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a id="anchor_last_page" class="page-link" href="#">
+                            <i class="fa fa-angles-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -202,6 +226,10 @@
         </div>
     </div>
 </div>
+<form id="form_pagination_inputs" method="GET">
+    <input id="input_offset" name="offset" type="hidden" value="0">
+    <input id="input_limit" name="limit" type="hidden" value="25">
+</form>
 </body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
@@ -257,16 +285,84 @@
         return $("<tr>").append(nameData, actionsData);
     } //buildRow
 
+    function preparePaginationNav(count) {
+        let offset = $("#input_offset").val();
+
+        offset = parseInt(offset);
+
+        let limit = $("#input_limit").val();
+
+        limit = parseInt(limit);
+
+        let nextId = offset + limit;
+
+        let nextPageAnchor = $("#anchor_next_page");
+
+        let lastPageAnchor = $("#anchor_last_page");
+
+        if (nextId >= count) {
+            nextPageAnchor.parent()
+                          .addClass("disabled");
+
+            lastPageAnchor.parent()
+                          .addClass("disabled");
+        } //end if
+
+        $("#anchor_first_page").click(function () {
+            $("#input_offset").val(0);
+
+            $("#form_pagination_inputs").submit();
+        });
+
+        $("#anchor_previous_page").click(function () {
+            let newOffset = offset - limit;
+
+            $("#input_offset").val(newOffset);
+
+            $("#form_pagination_inputs").submit();
+        });
+
+        nextPageAnchor.click(function () {
+            let newOffset = offset + limit;
+
+            $("#input_offset").val(newOffset);
+
+            $("#form_pagination_inputs").submit();
+        });
+
+        lastPageAnchor.click(function () {
+
+        });
+    } //preparePaginationNav
+
     function showTable() {
+        let offset = $("#input_offset").val();
+
+        let limit = $("#input_limit").val();
+
         $.ajax({
             "type": "GET",
             "url": "http://localhost:8080/api/coffee",
+            "data": {
+                "offset": offset,
+                "limit": limit
+            },
             "success": function (response) {
                 if ((response.status !== "SUCCESS") || !response.hasOwnProperty("content")) {
                     return;
                 } //end if
 
-                let coffees = response.content;
+                let content = response.content;
+
+                if (!content.hasOwnProperty("count") || !content.hasOwnProperty("coffees")) {
+                    return;
+                } //end if
+
+                let count = content.count;
+
+                preparePaginationNav(count);
+
+                let coffees = content.coffees;
 
                 let rows = [];
 
@@ -279,11 +375,51 @@
                 });
 
                 $("#tbody_names").html(rows);
+                
+                if (coffees.length > 0) {
+                    let lastIndex = coffees.length - 1;
+                    
+                    let lastCoffee = coffees[lastIndex];
+                    
+                    if (lastCoffee.hasOwnProperty("id")) {
+                        let lastCoffeeId = lastCoffee.id;
+                        
+                        $("#input_offset").val(lastCoffeeId);
+                    } //end if
+                }
             }
         });
     } //showTable
 
     $(function () {
+        let urlParameters = new URLSearchParams(window.location.search);
+
+        let offsetInput = $("#input_offset");
+
+        if (urlParameters.has("offset")) {
+            let offset = urlParameters.get("offset");
+
+            offsetInput.val(offset);
+        } //end if
+
+        if (urlParameters.has("limit")) {
+            let limit = urlParameters.get("limit");
+
+            $("#input_limit").val(limit);
+        } //end if
+
+        let offset = offsetInput.val();
+
+        offset = parseInt(offset);
+
+        if (offset === 0) {
+            $("#anchor_first_page").parent()
+                                   .addClass("disabled");
+
+            $("#anchor_previous_page").parent()
+                                      .addClass("disabled");
+        } //end if
+
         showTable();
 
         $("#button_add").click(function () {
