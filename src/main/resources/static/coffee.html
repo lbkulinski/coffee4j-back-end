@@ -227,8 +227,7 @@
     </div>
 </div>
 <form id="form_pagination_inputs" method="GET">
-    <input id="input_offset" name="offset" type="hidden" value="0">
-    <input id="input_limit" name="limit" type="hidden" value="25">
+    <input id="input_page" name="page" type="hidden" value="1">
 </form>
 </body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -286,21 +285,29 @@
     } //buildRow
 
     function preparePaginationNav(count) {
-        let offset = $("#input_offset").val();
+        let page = $("#input_page").val();
 
-        offset = parseInt(offset);
+        page = parseInt(page);
 
-        let limit = $("#input_limit").val();
+        let limit = 25;
 
-        limit = parseInt(limit);
+        let pageCount = Math.ceil(count / limit);
 
-        let nextId = offset + limit;
+        let firstPageAnchor = $("#anchor_first_page");
+
+        let previousPageAnchor = $("#anchor_previous_page");
 
         let nextPageAnchor = $("#anchor_next_page");
 
         let lastPageAnchor = $("#anchor_last_page");
 
-        if (nextId >= count) {
+        if (page <= 1) {
+            firstPageAnchor.parent()
+                           .addClass("disabled");
+
+            previousPageAnchor.parent()
+                              .addClass("disabled");
+        } else if (page >= pageCount) {
             nextPageAnchor.parent()
                           .addClass("disabled");
 
@@ -308,44 +315,43 @@
                           .addClass("disabled");
         } //end if
 
-        $("#anchor_first_page").click(function () {
-            $("#input_offset").val(0);
+        firstPageAnchor.click(function () {
+            $("#input_page").val(0);
 
             $("#form_pagination_inputs").submit();
         });
 
-        $("#anchor_previous_page").click(function () {
-            let newOffset = offset - limit;
+        previousPageAnchor.click(function () {
+            let newPage = page - 1;
 
-            $("#input_offset").val(newOffset);
+            $("#input_page").val(newPage);
 
             $("#form_pagination_inputs").submit();
         });
 
         nextPageAnchor.click(function () {
-            let newOffset = offset + limit;
+            let newPage = page + 1;
 
-            $("#input_offset").val(newOffset);
+            $("#input_page").val(newPage);
 
             $("#form_pagination_inputs").submit();
         });
 
         lastPageAnchor.click(function () {
+            $("#input_page").val(pageCount);
 
+            $("#form_pagination_inputs").submit();
         });
     } //preparePaginationNav
 
     function showTable() {
-        let offset = $("#input_offset").val();
-
-        let limit = $("#input_limit").val();
+        let page = $("#input_page").val();
 
         $.ajax({
             "type": "GET",
             "url": "http://localhost:8080/api/coffee",
             "data": {
-                "offset": offset,
-                "limit": limit
+                "page": page
             },
             "success": function (response) {
                 if ((response.status !== "SUCCESS") || !response.hasOwnProperty("content")) {
@@ -375,18 +381,6 @@
                 });
 
                 $("#tbody_names").html(rows);
-                
-                if (coffees.length > 0) {
-                    let lastIndex = coffees.length - 1;
-                    
-                    let lastCoffee = coffees[lastIndex];
-                    
-                    if (lastCoffee.hasOwnProperty("id")) {
-                        let lastCoffeeId = lastCoffee.id;
-                        
-                        $("#input_offset").val(lastCoffeeId);
-                    } //end if
-                }
             }
         });
     } //showTable
@@ -394,30 +388,12 @@
     $(function () {
         let urlParameters = new URLSearchParams(window.location.search);
 
-        let offsetInput = $("#input_offset");
+        let pageInput = $("#input_page");
 
-        if (urlParameters.has("offset")) {
-            let offset = urlParameters.get("offset");
+        if (urlParameters.has("page")) {
+            let page = urlParameters.get("page");
 
-            offsetInput.val(offset);
-        } //end if
-
-        if (urlParameters.has("limit")) {
-            let limit = urlParameters.get("limit");
-
-            $("#input_limit").val(limit);
-        } //end if
-
-        let offset = offsetInput.val();
-
-        offset = parseInt(offset);
-
-        if (offset === 0) {
-            $("#anchor_first_page").parent()
-                                   .addClass("disabled");
-
-            $("#anchor_previous_page").parent()
-                                      .addClass("disabled");
+            pageInput.val(page);
         } //end if
 
         showTable();
