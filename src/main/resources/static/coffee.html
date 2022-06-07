@@ -68,30 +68,7 @@
                 <tbody id="tbody_names">
                 </tbody>
             </table>
-            <nav aria-label="Page navigation example">
-                <ul class="pagination justify-content-end">
-                    <li class="page-item">
-                        <a id="anchor_first_page" class="page-link" href="#">
-                            <i class="fa fa-angles-left"></i>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a id="anchor_previous_page" class="page-link" href="#">
-                            <i class="fa fa-angle-left"></i>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a id="anchor_next_page" class="page-link" href="#">
-                            <i class="fa fa-angle-right"></i>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a id="anchor_last_page" class="page-link" href="#">
-                            <i class="fa fa-angles-right"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+            <ul id="ul_pagination" class="pagination justify-content-end"></ul>
         </div>
     </div>
 </div>
@@ -230,12 +207,17 @@
     <input id="input_page" name="page" type="hidden" value="1">
 </form>
 </body>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
-        crossorigin="anonymous"></script>
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"
-        integrity="sha256-AFAYEOkzB6iIKnTYZOdUf9FFje6lOTYdwRJKwTN5mks=" crossorigin="anonymous"></script>
+        integrity="sha256-AFAYEOkzB6iIKnTYZOdUf9FFje6lOTYdwRJKwTN5mks=" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twbs-pagination/1.4.2/jquery.twbsPagination.min.js"
+        integrity="sha512-frFP3ZxLshB4CErXkPVEXnd5ingvYYtYhE5qllGdZmcOlRKNEPbufyupfdSTNmoF5ICaQNO6SenXzOZvoGkiIA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
     function buildRow(coffee) {
         if (!coffee.hasOwnProperty("id") || !coffee.hasOwnProperty("name")) {
@@ -285,62 +267,31 @@
     } //buildRow
 
     function preparePaginationNav(count) {
-        let page = $("#input_page").val();
-
-        page = parseInt(page);
-
         let limit = 25;
 
         let pageCount = Math.ceil(count / limit);
 
-        let firstPageAnchor = $("#anchor_first_page");
+        let visiblePages = 5;
 
-        let previousPageAnchor = $("#anchor_previous_page");
+        let first = $("<i>").addClass("fa fa-angles-left")
+                            .get(0).outerHTML;
 
-        let nextPageAnchor = $("#anchor_next_page");
+        let previous = $("<i>").addClass("fa fa-angle-left")
+                               .get(0).outerHTML;
 
-        let lastPageAnchor = $("#anchor_last_page");
+        let next = $("<i>").addClass("fa fa-angle-right")
+                           .get(0).outerHTML;
 
-        if (page <= 1) {
-            firstPageAnchor.parent()
-                           .addClass("disabled");
+        let last = $("<i>").addClass("fa fa-angles-right")
+                           .get(0).outerHTML;
 
-            previousPageAnchor.parent()
-                              .addClass("disabled");
-        } else if (page >= pageCount) {
-            nextPageAnchor.parent()
-                          .addClass("disabled");
-
-            lastPageAnchor.parent()
-                          .addClass("disabled");
-        } //end if
-
-        firstPageAnchor.click(function () {
-            $("#input_page").val(0);
-
-            $("#form_pagination_inputs").submit();
-        });
-
-        previousPageAnchor.click(function () {
-            let newPage = page - 1;
-
-            $("#input_page").val(newPage);
-
-            $("#form_pagination_inputs").submit();
-        });
-
-        nextPageAnchor.click(function () {
-            let newPage = page + 1;
-
-            $("#input_page").val(newPage);
-
-            $("#form_pagination_inputs").submit();
-        });
-
-        lastPageAnchor.click(function () {
-            $("#input_page").val(pageCount);
-
-            $("#form_pagination_inputs").submit();
+        $('#ul_pagination').twbsPagination({
+            "totalPages": pageCount,
+            "visiblePages": visiblePages,
+            "first": first,
+            "prev": previous,
+            "next": next,
+            "last": last
         });
     } //preparePaginationNav
 
