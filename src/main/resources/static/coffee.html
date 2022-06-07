@@ -206,6 +206,7 @@
 <form id="form_pagination_inputs" method="GET">
     <input id="input_page" name="page" type="hidden" value="1">
 </form>
+<input id="input_count" type="hidden" value="0">
 </body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"
         referrerpolicy="no-referrer"></script>
@@ -266,7 +267,7 @@
         return $("<tr>").append(nameData, actionsData);
     } //buildRow
 
-    function preparePaginationNav(count) {
+    function preparePaginationNav(count, page) {
         let limit = 25;
 
         let pageCount = Math.ceil(count / limit);
@@ -288,15 +289,22 @@
         $('#ul_pagination').twbsPagination({
             "totalPages": pageCount,
             "visiblePages": visiblePages,
+            "startPage": page,
+            "initiateStartPageClick": false,
             "first": first,
             "prev": previous,
             "next": next,
-            "last": last
+            "last": last,
+            "onPageClick": function (event, page) {
+                window.location.href = `http://localhost:8080/coffee.html?page=${page}`;
+            }
         });
     } //preparePaginationNav
 
     function showTable() {
         let page = $("#input_page").val();
+
+        page = parseInt(page);
 
         $.ajax({
             "type": "GET",
@@ -317,7 +325,11 @@
 
                 let count = content.count;
 
-                preparePaginationNav(count);
+                count = parseInt(count);
+
+                $("#input_count").val(count);
+
+                preparePaginationNav(count, page);
 
                 let coffees = content.coffees;
 
@@ -367,9 +379,21 @@
                     "name": name
                 },
                 "success": function () {
-                    showTable();
-
                     $("#toast_add_success").toast("show");
+
+                    setTimeout(function() {
+                        let count = $("#input_count").val();
+
+                        count = parseInt(count);
+
+                        count++;
+
+                        let limit = 25;
+
+                        let page = Math.ceil(count / limit);
+
+                        window.location.href = `http://localhost:8080/coffee.html?page=${page}`;
+                    }, 3000);
                 },
                 "error": function () {
                     $("#toast_add_error").toast("show");
@@ -398,9 +422,15 @@
                     "name": name
                 },
                 "success": function () {
-                    showTable();
-
                     $("#toast_edit_success").toast("show");
+
+                    setTimeout(function() {
+                        let page = $("#input_page").val();
+
+                        page = parseInt(page);
+
+                        window.location.href = `http://localhost:8080/coffee.html?page=${page}`;
+                    }, 3000);
                 },
                 "error": function () {
                     $("#toast_edit_error").toast("show");
@@ -426,9 +456,15 @@
                     "id": id
                 },
                 "success": function () {
-                    showTable();
-
                     $("#toast_delete_success").toast("show");
+
+                    setTimeout(function() {
+                        let page = $("#input_page").val();
+
+                        page = parseInt(page);
+
+                        window.location.href = `http://localhost:8080/coffee.html?page=${page}`;
+                    }, 3000);
                 },
                 "error": function () {
                     $("#toast_delete_error").toast("show");
