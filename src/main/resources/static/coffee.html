@@ -8,6 +8,11 @@
           integrity="sha256-FdatTf20PQr/rWg+cAKfl6j4/IY3oohFAJ7gVC3M34E=" crossorigin="anonymous">
     <script src="https://kit.fontawesome.com/eb648d6e5d.js" crossorigin="anonymous"></script>
     <title>Coffees</title>
+    <style>
+        .alert-style {
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg bg-light">
@@ -149,14 +154,8 @@
         </div>
     </div>
 </div>
-<div aria-live="polite" aria-atomic="true" class="position-relative">
-    <div class="toast-container position-absolute p-3">
-        <div id="toast_add_success" class="toast">
-            <div class="toast-body">
-                The coffee was successfully added.
-            </div>
-        </div>
-    </div>
+<div id="div_alert_add_success" class="alert alert-success fade ms-3 alert-style">
+    The coffee was successfully added.
 </div>
 <div aria-live="polite" aria-atomic="true" class="position-relative">
     <div class="toast-container position-absolute p-3">
@@ -379,7 +378,17 @@
                     "name": name
                 },
                 "success": function () {
-                    $("#toast_add_success").toast("show");
+                    let addSuccessAlertDiv = $("#div_alert_add_success");
+
+                    addSuccessAlertDiv.removeClass("hide");
+
+                    addSuccessAlertDiv.addClass("show");
+
+                    setTimeout(function() {
+                        addSuccessAlertDiv.removeClass("show");
+
+                        addSuccessAlertDiv.addClass("hide");
+                    }, 3000);
 
                     setTimeout(function() {
                         let count = $("#input_count").val();
@@ -393,7 +402,7 @@
                         let page = Math.ceil(count / limit);
 
                         window.location.href = `http://localhost:8080/coffee.html?page=${page}`;
-                    }, 3000);
+                    }, 4000);
                 },
                 "error": function () {
                     $("#toast_add_error").toast("show");
