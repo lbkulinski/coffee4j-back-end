@@ -8,11 +8,6 @@
           integrity="sha256-FdatTf20PQr/rWg+cAKfl6j4/IY3oohFAJ7gVC3M34E=" crossorigin="anonymous">
     <script src="https://kit.fontawesome.com/eb648d6e5d.js" crossorigin="anonymous"></script>
     <title>Coffees</title>
-    <style>
-        .alert-style {
-            display: inline-block;
-        }
-    </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg bg-light">
@@ -154,49 +149,91 @@
         </div>
     </div>
 </div>
-<div id="div_alert_add_success" class="alert alert-success fade ms-3 alert-style">
-    The coffee was successfully added.
+<div id="div_modal_add_success" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Add
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                The coffee was successfully added.
+            </div>
+        </div>
+    </div>
 </div>
-<div aria-live="polite" aria-atomic="true" class="position-relative">
-    <div class="toast-container position-absolute p-3">
-        <div id="toast_add_error" class="toast bg-danger">
-            <div class="toast-body">
+<div id="div_modal_add_error" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Add
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
                 The coffee could not be added. Please try again later.
             </div>
         </div>
     </div>
 </div>
-<div aria-live="polite" aria-atomic="true" class="position-relative">
-    <div class="toast-container position-absolute p-3">
-        <div id="toast_edit_success" class="toast">
-            <div class="toast-body">
+<div id="div_modal_edit_success" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Edit
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
                 The coffee was successfully edited.
             </div>
         </div>
     </div>
 </div>
-<div aria-live="polite" aria-atomic="true" class="position-relative">
-    <div class="toast-container position-absolute p-3">
-        <div id="toast_edit_error" class="toast bg-danger">
-            <div class="toast-body">
+<div id="div_modal_edit_error" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Edit
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
                 The coffee could not be edited. Please try again later.
             </div>
         </div>
     </div>
 </div>
-<div aria-live="polite" aria-atomic="true" class="position-relative">
-    <div class="toast-container position-absolute p-3">
-        <div id="toast_delete_success" class="toast">
-            <div class="toast-body">
+<div id="div_modal_delete_success" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
                 The coffee was successfully deleted.
             </div>
         </div>
     </div>
 </div>
-<div aria-live="polite" aria-atomic="true" class="position-relative">
-    <div class="toast-container position-absolute p-3">
-        <div id="toast_delete_error" class="toast bg-danger">
-            <div class="toast-body">
+<div id="div_modal_delete_error" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
                 The coffee could not be deleted. Please try again later.
             </div>
         </div>
@@ -378,16 +415,10 @@
                     "name": name
                 },
                 "success": function () {
-                    let addSuccessAlertDiv = $("#div_alert_add_success");
-
-                    addSuccessAlertDiv.removeClass("hide");
-
-                    addSuccessAlertDiv.addClass("show");
+                    $("#div_modal_add_success").modal("show");
 
                     setTimeout(function() {
-                        addSuccessAlertDiv.removeClass("show");
-
-                        addSuccessAlertDiv.addClass("hide");
+                        $("#div_modal_add_success").modal("hide");
                     }, 3000);
 
                     setTimeout(function() {
@@ -405,7 +436,11 @@
                     }, 4000);
                 },
                 "error": function () {
-                    $("#toast_add_error").toast("show");
+                    $("#div_modal_add_error").show();
+
+                    setTimeout(function() {
+                        $("#div_modal_add_error").hide();
+                    }, 3000);
                 }
             });
         });
@@ -418,7 +453,11 @@
             let name = $("#input_edit_coffee").val();
 
             if (!id) {
-                $("#toast_edit_error").toast("show");
+                $("#div_modal_edit_error").modal("show");
+
+                setTimeout(function() {
+                    $("#div_modal_edit_error").modal("hide");
+                }, 3000);
             } //end if
 
             editModalDiv.modal("hide");
@@ -431,7 +470,11 @@
                     "name": name
                 },
                 "success": function () {
-                    $("#toast_edit_success").toast("show");
+                    $("#div_modal_edit_success").modal("show");
+
+                    setTimeout(function() {
+                        $("#div_modal_edit_success").modal("hide");
+                    }, 3000);
 
                     setTimeout(function() {
                         let page = $("#input_page").val();
@@ -439,10 +482,14 @@
                         page = parseInt(page);
 
                         window.location.href = `http://localhost:8080/coffee.html?page=${page}`;
-                    }, 3000);
+                    }, 4000);
                 },
                 "error": function () {
-                    $("#toast_edit_error").toast("show");
+                    $("#div_modal_edit_error").modal("show");
+
+                    setTimeout(function() {
+                        $("#div_modal_edit_error").modal("hide");
+                    }, 3000);
                 }
             });
         });
@@ -453,7 +500,11 @@
             let id = deleteModalDiv.data("coffee_id");
 
             if (!id) {
-                $("#toast_delete_error").toast("show");
+                $("#div_modal_delete_error").modal("show");
+
+                setTimeout(function() {
+                    $("#div_modal_delete_error").modal("hide");
+                }, 3000);
             } //end if
 
             deleteModalDiv.modal("hide");
@@ -465,18 +516,22 @@
                     "id": id
                 },
                 "success": function () {
-                    $("#toast_delete_success").toast("show");
+                    $("#div_modal_delete_success").modal("show");
 
                     setTimeout(function() {
-                        let page = $("#input_page").val();
-
-                        page = parseInt(page);
-
-                        window.location.href = `http://localhost:8080/coffee.html?page=${page}`;
+                        $("#div_modal_delete_success").modal("hide");
                     }, 3000);
+
+                    setTimeout(function() {
+                        window.location.href = "http://localhost:8080/coffee.html";
+                    }, 4000);
                 },
                 "error": function () {
-                    $("#toast_delete_error").toast("show");
+                    $("#div_modal_delete_error").modal("show");
+
+                    setTimeout(function() {
+                        $("#div_modal_delete_error").modal("hide");
+                    }, 3000);
                 }
             });
         });
