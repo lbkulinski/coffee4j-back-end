@@ -156,11 +156,13 @@ public final class BrewerController {
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
+     * @param page the page to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(required = false) String name) {
+                                        @RequestParam(required = false) String name,
+                                        @RequestParam(defaultValue = "1") int page) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -169,7 +171,13 @@ public final class BrewerController {
 
         int userId = user.id();
 
-        Condition condition = BREWER.USER_ID.eq(userId);
+        int limit = 25;
+
+        int offset = (page - 1) * limit;
+
+        Condition condition = BREWER.ID.greaterThan(offset);
+
+        condition = condition.and(BREWER.USER_ID.eq(userId));
 
         if (id != null) {
             condition = condition.and(BREWER.ID.eq(id));
@@ -179,14 +187,19 @@ public final class BrewerController {
             condition = condition.and(BREWER.NAME.eq(name));
         } //end if
 
+        int rowCount;
+
         Result<? extends Record> result;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
+            rowCount = context.fetchCount(BREWER, BREWER.USER_ID.eq(userId));
+
             result = context.select(BREWER.ID, BREWER.NAME)
                             .from(BREWER)
                             .where(condition)
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -200,9 +213,14 @@ public final class BrewerController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
-        List<Map<String, Object>> content = result.intoMaps();
+        List<Map<String, Object>> brewers = result.intoMaps();
 
-        Body<List<Map<String, Object>>> body = Body.success(content);
+        Map<String, Object> content = Map.of(
+            "count", rowCount,
+            "brewers", brewers
+        );
+
+        Body<Map<String, Object>> body = Body.success(content);
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
