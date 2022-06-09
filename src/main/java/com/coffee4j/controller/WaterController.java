@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j water data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @version June 9, 2022
  */
 @RestController
 @RequestMapping("/api/water")
@@ -156,11 +156,13 @@ public final class WaterController {
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
+     * @param page the page to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(required = false) String name) {
+                                        @RequestParam(required = false) String name,
+                                        @RequestParam(defaultValue = "1") int page) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -169,7 +171,13 @@ public final class WaterController {
 
         int userId = user.id();
 
-        Condition condition = WATER.USER_ID.eq(userId);
+        int limit = 25;
+
+        int offset = (page - 1) * limit;
+
+        Condition condition = WATER.ID.greaterThan(offset);
+
+        condition = condition.and(WATER.USER_ID.eq(userId));
 
         if (id != null) {
             condition = condition.and(WATER.ID.eq(id));
@@ -179,14 +187,19 @@ public final class WaterController {
             condition = condition.and(WATER.NAME.eq(name));
         } //end if
 
+        int rowCount;
+
         Result<? extends Record> result;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
+            rowCount = context.fetchCount(WATER, WATER.USER_ID.eq(userId));
+
             result = context.select(WATER.ID, WATER.NAME)
                             .from(WATER)
                             .where(condition)
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -200,9 +213,14 @@ public final class WaterController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
-        List<Map<String, Object>> content = result.intoMaps();
+        List<Map<String, Object>> waters = result.intoMaps();
 
-        Body<List<Map<String, Object>>> body = Body.success(content);
+        Map<String, Object> content = Map.of(
+            "count", rowCount,
+            "waters", waters
+        );
+
+        Body<Map<String, Object>> body = Body.success(content);
 
         return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
