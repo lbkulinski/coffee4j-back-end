@@ -306,11 +306,16 @@ public final class BrewController {
                                     BREWER.NAME.as("brewer_name"), BREW.FILTER_ID, FILTER.NAME.as("filter_name"),
                                     BREW.VESSEL_ID, VESSEL.NAME.as("vessel_name"))
                             .from(BREW)
-                            .join(COFFEE).on(COFFEE.ID.eq(BREW.COFFEE_ID))
-                            .join(WATER).on(WATER.ID.eq(BREW.WATER_ID))
-                            .join(BREWER).on(BREWER.ID.eq(BREW.BREWER_ID))
-                            .join(FILTER).on(FILTER.ID.eq(BREW.FILTER_ID))
-                            .join(VESSEL).on(VESSEL.ID.eq(BREW.VESSEL_ID))
+                            .join(COFFEE)
+                            .on(COFFEE.ID.eq(BREW.COFFEE_ID))
+                            .join(WATER)
+                            .on(WATER.ID.eq(BREW.WATER_ID))
+                            .join(BREWER)
+                            .on(BREWER.ID.eq(BREW.BREWER_ID))
+                            .join(FILTER)
+                            .on(FILTER.ID.eq(BREW.FILTER_ID))
+                            .join(VESSEL)
+                            .on(VESSEL.ID.eq(BREW.VESSEL_ID))
                             .where(condition)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
