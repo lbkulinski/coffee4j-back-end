@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css"
           integrity="sha256-FdatTf20PQr/rWg+cAKfl6j4/IY3oohFAJ7gVC3M34E=" crossorigin="anonymous">
     <script src="https://kit.fontawesome.com/eb648d6e5d.js" crossorigin="anonymous"></script>
-    <title>Water</title>
+    <title>Brewer</title>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg bg-light">
@@ -36,10 +36,10 @@
                             <a class="dropdown-item" href="http://localhost:8080/coffee.html">
                                 Coffee
                             </a>
-                            <a class="dropdown-item active" href="http://localhost:8080/water.html">
+                            <a class="dropdown-item" href="http://localhost:8080/water.html">
                                 Water
                             </a>
-                            <a class="dropdown-item" href="http://localhost:8080/brewer.html">
+                            <a class="dropdown-item active" href="http://localhost:8080/brewer.html">
                                 Brewer
                             </a>
                         </li>
@@ -53,7 +53,7 @@
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">
-                Water
+                Brewer
             </h5>
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                 <button id="button_add" class="btn btn-dark" type="button">
@@ -88,11 +88,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <label for="input_add_water" class="form-label">
-                    Water
+                <label for="input_add_brewer" class="form-label">
+                    Brewer
                 </label>
                 <!-- TODO: Add character counter -->
-                <input id="input_add_water" class="form-control" type="text" maxlength="45">
+                <input id="input_add_brewer" class="form-control" type="text" maxlength="45">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -115,11 +115,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <label for="input_edit_water" class="form-label">
-                    Water
+                <label for="input_edit_brewer" class="form-label">
+                    Brewer
                 </label>
                 <!-- TODO: Add character counter -->
-                <input id="input_edit_water" class="form-control" type="text" maxlength="45">
+                <input id="input_edit_brewer" class="form-control" type="text" maxlength="45">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -142,7 +142,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                Are you sure you want to delete this water?
+                Are you sure you want to delete this brewer?
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -165,7 +165,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                The water was successfully added.
+                The brewer was successfully added.
             </div>
         </div>
     </div>
@@ -180,7 +180,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                The water could not be added. Please try again later.
+                The brewer could not be added. Please try again later.
             </div>
         </div>
     </div>
@@ -195,7 +195,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                The water was successfully edited.
+                The brewer was successfully edited.
             </div>
         </div>
     </div>
@@ -210,7 +210,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                The water could not be edited. Please try again later.
+                The brewer could not be edited. Please try again later.
             </div>
         </div>
     </div>
@@ -225,7 +225,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                The water was successfully deleted.
+                The brewer was successfully deleted.
             </div>
         </div>
     </div>
@@ -240,7 +240,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                The water could not be deleted. Please try again later.
+                The brewer could not be deleted. Please try again later.
             </div>
         </div>
     </div>
@@ -262,12 +262,12 @@
         integrity="sha512-frFP3ZxLshB4CErXkPVEXnd5ingvYYtYhE5qllGdZmcOlRKNEPbufyupfdSTNmoF5ICaQNO6SenXzOZvoGkiIA=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
-    function buildRow(water) {
-        if (!water.hasOwnProperty("id") || !water.hasOwnProperty("name")) {
+    function buildRow(brewer) {
+        if (!brewer.hasOwnProperty("id") || !brewer.hasOwnProperty("name")) {
             return null;
         } //end if
 
-        let nameData = $("<td>").text(water.name);
+        let nameData = $("<td>").text(brewer.name);
 
         let editIcon = $("<i>").addClass("fa-solid fa-pen-to-square").css("color", "black");
 
@@ -275,9 +275,9 @@
                                  .append(editIcon);
 
         editAnchor.click(function () {
-            $("#input_edit_water").val(water.name);
+            $("#input_edit_brewer").val(brewer.name);
 
-            $("#div_modal_edit").data("water_id", water.id)
+            $("#div_modal_edit").data("brewer_id", brewer.id)
                                 .modal("show");
         });
 
@@ -291,7 +291,7 @@
                                    .append(deleteIcon);
 
         deleteAnchor.click(function () {
-            $("#div_modal_delete").data("water_id", water.id)
+            $("#div_modal_delete").data("brewer_id", brewer.id)
                                   .modal("show");
         });
 
@@ -338,7 +338,7 @@
             "next": next,
             "last": last,
             "onPageClick": function (event, page) {
-                window.location.href = `http://localhost:8080/water.html?page=${page}`;
+                window.location.href = `http://localhost:8080/brewer.html?page=${page}`;
             }
         });
     } //preparePaginationNav
@@ -350,7 +350,7 @@
 
         $.ajax({
             "type": "GET",
-            "url": "http://localhost:8080/api/water",
+            "url": "http://localhost:8080/api/brewer",
             "data": {
                 "page": page
             },
@@ -361,7 +361,7 @@
 
                 let content = response.content;
 
-                if (!content.hasOwnProperty("count") || !content.hasOwnProperty("waters")) {
+                if (!content.hasOwnProperty("count") || !content.hasOwnProperty("brewers")) {
                     return;
                 } //end if
 
@@ -373,12 +373,12 @@
 
                 preparePaginationNav(count, page);
 
-                let waters = content.waters;
+                let brewers = content.brewers;
 
                 let rows = [];
 
-                waters.forEach(function (water) {
-                    let row = buildRow(water);
+                brewers.forEach(function (brewer) {
+                    let row = buildRow(brewer);
 
                     if (row) {
                         rows.push(row);
@@ -404,19 +404,19 @@
         showTable();
 
         $("#button_add").click(function () {
-            $("#input_add_water").val("");
+            $("#input_add_brewer").val("");
 
             $("#div_modal_add").modal("show");
         });
 
         $("#button_save_add").click(function () {
-            let name = $("#input_add_water").val();
+            let name = $("#input_add_brewer").val();
 
             $("#div_modal_add").modal("hide");
 
             $.ajax({
                 "type": "POST",
-                "url": "http://localhost:8080/api/water",
+                "url": "http://localhost:8080/api/brewer",
                 "data": {
                     "name": name
                 },
@@ -438,7 +438,7 @@
 
                         let page = Math.ceil(count / limit);
 
-                        window.location.href = `http://localhost:8080/water.html?page=${page}`;
+                        window.location.href = `http://localhost:8080/brewer.html?page=${page}`;
                     }, 4000);
                 },
                 "error": function () {
@@ -454,9 +454,9 @@
         $("#button_save_edit").click(function () {
             let editModalDiv = $("#div_modal_edit");
 
-            let id = editModalDiv.data("water_id");
+            let id = editModalDiv.data("brewer_id");
 
-            let name = $("#input_edit_water").val();
+            let name = $("#input_edit_brewer").val();
 
             if (!id) {
                 $("#div_modal_edit_error").modal("show");
@@ -470,7 +470,7 @@
 
             $.ajax({
                 "type": "PUT",
-                "url": "http://localhost:8080/api/water",
+                "url": "http://localhost:8080/api/brewer",
                 "data": {
                     "id": id,
                     "name": name
@@ -487,7 +487,7 @@
 
                         page = parseInt(page);
 
-                        window.location.href = `http://localhost:8080/water.html?page=${page}`;
+                        window.location.href = `http://localhost:8080/brewer.html?page=${page}`;
                     }, 4000);
                 },
                 "error": function () {
@@ -503,7 +503,7 @@
         $("#button_yes_delete").click(function () {
             let deleteModalDiv = $("#div_modal_delete");
 
-            let id = deleteModalDiv.data("water_id");
+            let id = deleteModalDiv.data("brewer_id");
 
             if (!id) {
                 $("#div_modal_delete_error").modal("show");
@@ -517,7 +517,7 @@
 
             $.ajax({
                 "type": "DELETE",
-                "url": "http://localhost:8080/api/water",
+                "url": "http://localhost:8080/api/brewer",
                 "data": {
                     "id": id
                 },
@@ -529,7 +529,7 @@
                     }, 3000);
 
                     setTimeout(function() {
-                        window.location.href = "http://localhost:8080/water.html";
+                        window.location.href = "http://localhost:8080/brewer.html";
                     }, 4000);
                 },
                 "error": function () {
