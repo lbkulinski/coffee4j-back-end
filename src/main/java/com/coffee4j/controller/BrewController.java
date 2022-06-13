@@ -45,7 +45,9 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +57,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j brew data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @version June 13, 2022
  */
 @RestController
 @RequestMapping("/api/brew")
@@ -112,10 +114,9 @@ public final class BrewController {
     } //static
 
     /**
-     * Attempts to create a new brew. A timestamp, coffee ID, water ID, brewer ID, filter ID, vessel ID, coffee mass,
-     * and water mass are required for creation.
+     * Attempts to create a new brew. A coffee ID, water ID, brewer ID, filter ID, vessel ID, coffee mass, and water
+     * mass are required for creation.
      *
-     * @param timestampString the timestamp {@link String} to be used in the operation
      * @param coffeeId the coffee ID to be used in the operation
      * @param waterId the water ID to be used in the operation
      * @param brewerId the brewer ID to be used in the operation
@@ -126,8 +127,7 @@ public final class BrewController {
      * @return a {@link ResponseEntity} containing the outcome of the create operation
      */
     @PostMapping
-    public ResponseEntity<Body<?>> create(@RequestParam("timestamp") String timestampString,
-                                          @RequestParam("coffee_id") int coffeeId,
+    public ResponseEntity<Body<?>> create(@RequestParam("coffee_id") int coffeeId,
                                           @RequestParam("water_id") int waterId,
                                           @RequestParam("brewer_id") int brewerId,
                                           @RequestParam("filter_id") int filterId,
@@ -140,24 +140,10 @@ public final class BrewController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         } //end if
 
-        LocalDateTime timestamp;
-
-        try {
-            timestamp = LocalDateTime.parse(timestampString);
-        } catch (DateTimeParseException e) {
-            LOGGER.atError()
-                  .withThrowable(e)
-                  .log();
-
-            String content = "The specified timestamp is malformed";
-
-            Body<String> body = Body.error(content);
-
-            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-        } //end try catch
-
         int userId = user.id();
 
+        LocalDateTime timestamp = LocalDateTime.now(ZoneOffset.UTC);
+        
         BrewRecord record;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
@@ -372,10 +358,10 @@ public final class BrewController {
         Map<Field<?>, Object> fieldToNewValue = new HashMap<>();
 
         if (timestampString != null) {
-            LocalDateTime timestamp;
+            Instant instant;
 
             try {
-                timestamp = LocalDateTime.parse(timestampString);
+                instant = Instant.parse(timestampString);
             } catch (DateTimeParseException e) {
                 LOGGER.atError()
                       .withThrowable(e)
@@ -387,6 +373,8 @@ public final class BrewController {
 
                 return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
             } //end try catch
+
+            LocalDateTime timestamp = LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
 
             fieldToNewValue.put(BREW.TIMESTAMP, timestamp);
         } //end if
