@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.2
+-- Dumped from database version 14.3
 -- Dumped by pg_dump version 14.3
 
 SET statement_timeout = 0;
@@ -15,6 +15,36 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+DROP DATABASE postgres;
+--
+-- Name: postgres; Type: DATABASE; Schema: -; Owner: postgres
+--
+
+CREATE DATABASE postgres WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
+
+
+ALTER DATABASE postgres OWNER TO postgres;
+
+\connect postgres
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: DATABASE postgres; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON DATABASE postgres IS 'default administrative connection database';
+
 
 SET default_tablespace = '';
 
@@ -33,8 +63,8 @@ CREATE TABLE public.brew (
     brewer_id integer NOT NULL,
     filter_id integer NOT NULL,
     vessel_id integer NOT NULL,
-    coffee_mass real NOT NULL,
-    water_mass real NOT NULL
+    coffee_mass numeric(10,4) NOT NULL,
+    water_mass numeric(10,4) NOT NULL
 );
 
 
@@ -326,7 +356,6 @@ ALTER TABLE ONLY public.water ALTER COLUMN id SET DEFAULT nextval('public.water_
 --
 
 COPY public.brew (id, user_id, "timestamp", coffee_id, water_id, brewer_id, filter_id, vessel_id, coffee_mass, water_mass) FROM stdin;
-1	1	2022-05-21 21:49:24.46	1	1	1	1	1	18	300
 \.
 
 
@@ -335,7 +364,6 @@ COPY public.brew (id, user_id, "timestamp", coffee_id, water_id, brewer_id, filt
 --
 
 COPY public.brewer (id, user_id, name) FROM stdin;
-1	1	april
 \.
 
 
@@ -344,7 +372,6 @@ COPY public.brewer (id, user_id, name) FROM stdin;
 --
 
 COPY public.coffee (id, user_id, name) FROM stdin;
-1	1	Karinga
 \.
 
 
@@ -353,7 +380,6 @@ COPY public.coffee (id, user_id, name) FROM stdin;
 --
 
 COPY public.filter (id, user_id, name) FROM stdin;
-1	1	Kalita Wave 185
 \.
 
 
@@ -362,7 +388,6 @@ COPY public.filter (id, user_id, name) FROM stdin;
 --
 
 COPY public."user" (id, username, password_hash) FROM stdin;
-1	lbk	$2a$10$K/jhrTvasup0ZGIBawMRZ.3sYWYJxgnaFLu85nMW5WmQ8Tc4Y287u
 \.
 
 
@@ -371,7 +396,6 @@ COPY public."user" (id, username, password_hash) FROM stdin;
 --
 
 COPY public.vessel (id, user_id, name) FROM stdin;
-1	1	Fellow Mighty Small Glass Carafe
 \.
 
 
@@ -380,7 +404,6 @@ COPY public.vessel (id, user_id, name) FROM stdin;
 --
 
 COPY public.water (id, user_id, name) FROM stdin;
-1	1	Barista Hustle
 \.
 
 
@@ -388,49 +411,49 @@ COPY public.water (id, user_id, name) FROM stdin;
 -- Name: brew_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.brew_id_seq', 1, true);
+SELECT pg_catalog.setval('public.brew_id_seq', 1, false);
 
 
 --
 -- Name: brewer_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.brewer_id_seq', 1, true);
+SELECT pg_catalog.setval('public.brewer_id_seq', 1, false);
 
 
 --
 -- Name: coffee_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.coffee_id_seq', 1, true);
+SELECT pg_catalog.setval('public.coffee_id_seq', 1, false);
 
 
 --
 -- Name: filter_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.filter_id_seq', 1, true);
+SELECT pg_catalog.setval('public.filter_id_seq', 1, false);
 
 
 --
 -- Name: user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.user_id_seq', 1, true);
+SELECT pg_catalog.setval('public.user_id_seq', 1, false);
 
 
 --
 -- Name: vessel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.vessel_id_seq', 1, true);
+SELECT pg_catalog.setval('public.vessel_id_seq', 1, false);
 
 
 --
 -- Name: water_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.water_id_seq', 1, true);
+SELECT pg_catalog.setval('public.water_id_seq', 1, false);
 
 
 --
