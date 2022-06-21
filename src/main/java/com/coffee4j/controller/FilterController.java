@@ -54,7 +54,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j filter data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @version June 21, 2022
  */
 @RestController
 @RequestMapping("/api/filter")
@@ -154,16 +154,18 @@ public final class FilterController {
     } //create
 
     /**
-     * Attempts to read the filter data of the current logged-in user. An ID or name can be used to filter the data.
-     * Assuming data exists, the ID and name of each filter are returned.
+     * Attempts to read the filter data of the current logged-in user on the specified page. An ID or name can be used
+     * to filter the data. Assuming data exists, the ID and name of each filter are returned.
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
+     * @param page the page to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(required = false) String name) {
+                                        @RequestParam(required = false) String name,
+                                        @RequestParam(defaultValue = "1") int page) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -172,7 +174,13 @@ public final class FilterController {
 
         int userId = user.id();
 
-        Condition condition = FILTER.USER_ID.eq(userId);
+        int limit = 25;
+
+        int offset = (page - 1) * limit;
+
+        Condition condition = FILTER.ID.greaterThan(offset);
+
+        condition = condition.and(FILTER.USER_ID.eq(userId));
 
         if (id != null) {
             condition = condition.and(FILTER.ID.eq(id));
@@ -182,14 +190,19 @@ public final class FilterController {
             condition = condition.and(FILTER.NAME.eq(name));
         } //end if
 
+        int rowCount;
+
         Result<? extends Record> result;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
+            rowCount = context.fetchCount(FILTER, FILTER.USER_ID.eq(userId));
+
             result = context.select(FILTER.ID, FILTER.NAME)
                             .from(FILTER)
                             .where(condition)
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -207,7 +220,15 @@ public final class FilterController {
 
         Body<List<Map<String, Object>>> body = Body.success(content);
 
-        return new ResponseEntity<>(body, HttpStatus.OK);
+        HttpHeaders httpHeaders = new HttpHeaders();
+
+        int pageCount = (int) Math.ceil(((double) rowCount) / limit);
+
+        String pageCountString = String.valueOf(pageCount);
+
+        httpHeaders.set("Page-Count", pageCountString);
+
+        return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
     } //read
 
     /**

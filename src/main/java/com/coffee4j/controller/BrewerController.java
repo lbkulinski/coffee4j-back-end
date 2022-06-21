@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j brewer data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @version June 21, 2022
  */
 @RestController
 @RequestMapping("/api/brewer")
@@ -151,8 +151,8 @@ public final class BrewerController {
     } //create
 
     /**
-     * Attempts to read the brewer data of the current logged-in user. An ID or name can be used to filter the data.
-     * Assuming data exists, the ID and name of each brewer are returned.
+     * Attempts to read the brewer data of the current logged-in user on the specified page. An ID or name can be used
+     * to filter the data. Assuming data exists, the ID and name of each brewer are returned.
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation

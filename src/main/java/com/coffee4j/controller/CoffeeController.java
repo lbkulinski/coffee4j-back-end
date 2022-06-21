@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j coffee data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version June 20, 2022
+ * @version June 21, 2022
  */
 @RestController
 @RequestMapping("/api/coffee")
@@ -151,8 +151,8 @@ public final class CoffeeController {
     } //create
 
     /**
-     * Attempts to read the coffee data of the current logged-in user. An ID or name can be used to filter the data.
-     * Assuming data exists, the ID and name of each coffee are returned.
+     * Attempts to read the coffee data of the current logged-in user on the specified page. An ID or name can be used
+     * to filter the data. Assuming data exists, the ID and name of each coffee are returned.
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
