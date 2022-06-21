@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j coffee data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version June 6, 2022
+ * @version June 20, 2022
  */
 @RestController
 @RequestMapping("/api/coffee")
@@ -213,11 +213,13 @@ public final class CoffeeController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
-        List<Map<String, Object>> coffees = result.intoMaps();
+        int pageCount = (int) Math.ceil(((double) rowCount) / limit);
+
+        List<Map<String, Object>> records = result.intoMaps();
 
         Map<String, Object> content = Map.of(
-            "count", rowCount,
-            "coffees", coffees
+            "pageCount", pageCount,
+            "records", records
         );
 
         Body<Map<String, Object>> body = Body.success(content);
