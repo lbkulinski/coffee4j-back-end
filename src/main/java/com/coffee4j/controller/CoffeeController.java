@@ -213,18 +213,19 @@ public final class CoffeeController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
+        List<Map<String, Object>> content = result.intoMaps();
+
+        Body<List<Map<String, Object>>> body = Body.success(content);
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+
         int pageCount = (int) Math.ceil(((double) rowCount) / limit);
 
-        List<Map<String, Object>> records = result.intoMaps();
+        String pageCountString = String.valueOf(pageCount);
 
-        Map<String, Object> content = Map.of(
-            "pageCount", pageCount,
-            "records", records
-        );
+        httpHeaders.set("Page-Count", pageCountString);
 
-        Body<Map<String, Object>> body = Body.success(content);
-
-        return new ResponseEntity<>(body, HttpStatus.OK);
+        return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
     } //read
 
     /**

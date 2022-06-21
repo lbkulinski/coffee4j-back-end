@@ -213,16 +213,19 @@ public final class BrewerController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
-        List<Map<String, Object>> brewers = result.intoMaps();
+        List<Map<String, Object>> content = result.intoMaps();
 
-        Map<String, Object> content = Map.of(
-            "count", rowCount,
-            "brewers", brewers
-        );
+        Body<List<Map<String, Object>>> body = Body.success(content);
 
-        Body<Map<String, Object>> body = Body.success(content);
+        HttpHeaders httpHeaders = new HttpHeaders();
 
-        return new ResponseEntity<>(body, HttpStatus.OK);
+        int pageCount = (int) Math.ceil(((double) rowCount) / limit);
+
+        String pageCountString = String.valueOf(pageCount);
+
+        httpHeaders.set("Page-Count", pageCountString);
+
+        return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
     } //read
 
     /**
