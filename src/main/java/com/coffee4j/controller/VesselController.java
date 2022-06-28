@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j vessel data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version June 21, 2022
+ * @version June 28, 2022
  */
 @RestController
 @RequestMapping("/api/vessel")
@@ -151,18 +151,18 @@ public final class VesselController {
     } //create
 
     /**
-     * Attempts to read the vessel data of the current logged-in user on the specified page. An ID or name can be used
-     * to filter the data. Assuming data exists, the ID and name of each vessel are returned.
+     * Attempts to read the vessel data of the current logged-in user using the specified offset ID. An ID or name can
+     * be used to filter the data. Assuming data exists, the ID and name of each vessel are returned.
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
-     * @param page the page to be used in the operation
+     * @param offsetId the offset ID to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(defaultValue = "1") int page) {
+                                        @RequestParam(defaultValue = "0") int offsetId) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -171,13 +171,9 @@ public final class VesselController {
 
         int userId = user.id();
 
-        int limit = 25;
+        int rowCount;
 
-        int offset = (page - 1) * limit;
-
-        Condition condition = VESSEL.ID.greaterThan(offset);
-
-        condition = condition.and(VESSEL.USER_ID.eq(userId));
+        Condition condition = VESSEL.USER_ID.eq(userId);
 
         if (id != null) {
             condition = condition.and(VESSEL.ID.eq(id));
@@ -187,7 +183,7 @@ public final class VesselController {
             condition = condition.and(VESSEL.NAME.eq(name));
         } //end if
 
-        int rowCount;
+        int limit = 10;
 
         Result<? extends Record> result;
 
@@ -199,6 +195,8 @@ public final class VesselController {
             result = context.select(VESSEL.ID, VESSEL.NAME)
                             .from(VESSEL)
                             .where(condition)
+                            .orderBy(VESSEL.ID)
+                            .seek(offsetId)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -218,11 +216,9 @@ public final class VesselController {
 
         HttpHeaders httpHeaders = new HttpHeaders();
 
-        int pageCount = (int) Math.ceil(((double) rowCount) / limit);
+        String recordCount = String.valueOf(rowCount);
 
-        String pageCountString = String.valueOf(pageCount);
-
-        httpHeaders.set("Page-Count", pageCountString);
+        httpHeaders.set("X-Record-Count", recordCount);
 
         return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
     } //read
