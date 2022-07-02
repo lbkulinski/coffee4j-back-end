@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j brewer data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version June 28, 2022
+ * @version July 2, 2022
  */
 @RestController
 @RequestMapping("/api/brewer")
@@ -151,18 +151,20 @@ public final class BrewerController {
     } //create
 
     /**
-     * Attempts to read the brewer data of the current logged-in user using the specified offset ID. An ID or name can
-     * be used to filter the data. Assuming data exists, the ID and name of each brewer are returned.
+     * Attempts to read the brewer data of the current logged-in user using the specified offset ID and limit. An ID or
+     * name can be used to filter the data. Assuming data exists, the ID and name of each brewer are returned.
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
      * @param offsetId the offset ID to be used in the operation
+     * @param limit the limit to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(defaultValue = "0") int offsetId) {
+                                        @RequestParam(defaultValue = "0") int offsetId,
+                                        @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -170,8 +172,6 @@ public final class BrewerController {
         } //end if
 
         int userId = user.id();
-
-        int rowCount;
 
         Condition condition = BREWER.USER_ID.eq(userId);
 
@@ -183,14 +183,10 @@ public final class BrewerController {
             condition = condition.and(BREWER.NAME.eq(name));
         } //end if
 
-        int limit = 10;
-
         Result<? extends Record> result;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
-
-            rowCount = context.fetchCount(BREWER, BREWER.USER_ID.eq(userId));
 
             result = context.select(BREWER.ID, BREWER.NAME)
                             .from(BREWER)
@@ -215,13 +211,7 @@ public final class BrewerController {
 
         Body<List<Map<String, Object>>> body = Body.success(content);
 
-        HttpHeaders httpHeaders = new HttpHeaders();
-
-        String recordCount = String.valueOf(rowCount);
-
-        httpHeaders.set("X-Record-Count", recordCount);
-
-        return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
+        return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
 
     /**

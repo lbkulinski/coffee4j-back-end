@@ -54,7 +54,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j filter data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version June 28, 2022
+ * @version July 2, 2022
  */
 @RestController
 @RequestMapping("/api/filter")
@@ -154,18 +154,20 @@ public final class FilterController {
     } //create
 
     /**
-     * Attempts to read the filter data of the current logged-in user using the specified offset ID. An ID or name can
-     * be used to filter the data. Assuming data exists, the ID and name of each filter are returned.
+     * Attempts to read the filter data of the current logged-in user using the specified offset ID and limit. An ID or
+     * name can be used to filter the data. Assuming data exists, the ID and name of each filter are returned.
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
      * @param offsetId the offset ID to be used in the operation
+     * @param limit the limit to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(defaultValue = "0") int offsetId) {
+                                        @RequestParam(defaultValue = "0") int offsetId,
+                                        @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -173,8 +175,6 @@ public final class FilterController {
         } //end if
 
         int userId = user.id();
-
-        int rowCount;
 
         Condition condition = FILTER.USER_ID.eq(userId);
 
@@ -186,14 +186,10 @@ public final class FilterController {
             condition = condition.and(FILTER.NAME.eq(name));
         } //end if
 
-        int limit = 10;
-
         Result<? extends Record> result;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
-
-            rowCount = context.fetchCount(FILTER, FILTER.USER_ID.eq(userId));
 
             result = context.select(FILTER.ID, FILTER.NAME)
                             .from(FILTER)
@@ -218,13 +214,7 @@ public final class FilterController {
 
         Body<List<Map<String, Object>>> body = Body.success(content);
 
-        HttpHeaders httpHeaders = new HttpHeaders();
-
-        String recordCount = String.valueOf(rowCount);
-
-        httpHeaders.set("X-Record-Count", recordCount);
-
-        return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
+        return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
 
     /**

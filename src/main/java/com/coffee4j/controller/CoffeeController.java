@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j coffee data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version June 28, 2022
+ * @version July 2, 2022
  */
 @RestController
 @RequestMapping("/api/coffee")
@@ -151,18 +151,20 @@ public final class CoffeeController {
     } //create
 
     /**
-     * Attempts to read the coffee data of the current logged-in user using the specified offset ID. An ID or name can
-     * be used to filter the data. Assuming data exists, the ID and name of each coffee are returned.
+     * Attempts to read the coffee data of the current logged-in user using the specified offset ID and limit. An ID or
+     * name can be used to filter the data. Assuming data exists, the ID and name of each coffee are returned.
      *
      * @param id the ID to be used in the operation
      * @param name the name to be used in the operation
      * @param offsetId the offset ID to be used in the operation
+     * @param limit the limit to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the read operation
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(defaultValue = "0") int offsetId) {
+                                        @RequestParam(defaultValue = "0") int offsetId,
+                                        @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -170,8 +172,6 @@ public final class CoffeeController {
         } //end if
 
         int userId = user.id();
-
-        int rowCount;
 
         Condition condition = COFFEE.USER_ID.eq(userId);
 
@@ -183,14 +183,10 @@ public final class CoffeeController {
             condition = condition.and(COFFEE.NAME.eq(name));
         } //end if
 
-        int limit = 10;
-
         Result<? extends Record> result;
 
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
-
-            rowCount = context.fetchCount(COFFEE, COFFEE.USER_ID.eq(userId));
 
             result = context.select(COFFEE.ID, COFFEE.NAME)
                             .from(COFFEE)
@@ -215,13 +211,7 @@ public final class CoffeeController {
 
         Body<List<Map<String, Object>>> body = Body.success(content);
 
-        HttpHeaders httpHeaders = new HttpHeaders();
-
-        String recordCount = String.valueOf(rowCount);
-
-        httpHeaders.set("X-Record-Count", recordCount);
-
-        return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
+        return new ResponseEntity<>(body, HttpStatus.OK);
     } //read
 
     /**
