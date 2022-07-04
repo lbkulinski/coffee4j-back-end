@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j coffee data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version July 2, 2022
+ * @version July 3, 2022
  */
 @RestController
 @RequestMapping("/api/coffee")
@@ -163,7 +163,7 @@ public final class CoffeeController {
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(defaultValue = "0") int offsetId,
+                                        @RequestParam(required = false) Integer offsetId,
                                         @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
@@ -173,7 +173,13 @@ public final class CoffeeController {
 
         int userId = user.id();
 
-        Condition condition = COFFEE.USER_ID.eq(userId);
+        Condition condition = DSL.noCondition();
+
+        if (offsetId != null) {
+            condition = condition.and(COFFEE.ID.lessThan(offsetId));
+        } //end if
+
+        condition = condition.and(COFFEE.USER_ID.eq(userId));
 
         if (id != null) {
             condition = condition.and(COFFEE.ID.eq(id));
@@ -191,8 +197,7 @@ public final class CoffeeController {
             result = context.select(COFFEE.ID, COFFEE.NAME)
                             .from(COFFEE)
                             .where(condition)
-                            .orderBy(COFFEE.ID)
-                            .seek(offsetId)
+                            .orderBy(COFFEE.ID.desc())
                             .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {

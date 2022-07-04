@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j water data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version July 2, 2022
+ * @version July 3, 2022
  */
 @RestController
 @RequestMapping("/api/water")
@@ -163,7 +163,7 @@ public final class WaterController {
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(defaultValue = "0") int offsetId,
+                                        @RequestParam(required = false) Integer offsetId,
                                         @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
@@ -173,7 +173,13 @@ public final class WaterController {
 
         int userId = user.id();
 
-        Condition condition = WATER.USER_ID.eq(userId);
+        Condition condition = DSL.noCondition();
+
+        if (offsetId != null) {
+            condition = condition.and(WATER.ID.lessThan(offsetId));
+        } //end if
+
+        condition = condition.and(WATER.USER_ID.eq(userId));
 
         if (id != null) {
             condition = condition.and(WATER.ID.eq(id));
@@ -191,8 +197,7 @@ public final class WaterController {
             result = context.select(WATER.ID, WATER.NAME)
                             .from(WATER)
                             .where(condition)
-                            .orderBy(WATER.ID)
-                            .seek(offsetId)
+                            .orderBy(WATER.ID.desc())
                             .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {

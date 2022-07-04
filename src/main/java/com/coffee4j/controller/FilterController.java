@@ -54,7 +54,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j filter data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version July 2, 2022
+ * @version July 3, 2022
  */
 @RestController
 @RequestMapping("/api/filter")
@@ -166,7 +166,7 @@ public final class FilterController {
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(defaultValue = "0") int offsetId,
+                                        @RequestParam(required = false) Integer offsetId,
                                         @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
@@ -176,7 +176,13 @@ public final class FilterController {
 
         int userId = user.id();
 
-        Condition condition = FILTER.USER_ID.eq(userId);
+        Condition condition = DSL.noCondition();
+
+        if (offsetId != null) {
+            condition = condition.and(FILTER.ID.lessThan(offsetId));
+        } //end if
+
+        condition = condition.and(FILTER.USER_ID.eq(userId));
 
         if (id != null) {
             condition = condition.and(FILTER.ID.eq(id));
@@ -194,8 +200,7 @@ public final class FilterController {
             result = context.select(FILTER.ID, FILTER.NAME)
                             .from(FILTER)
                             .where(condition)
-                            .orderBy(FILTER.ID)
-                            .seek(offsetId)
+                            .orderBy(FILTER.ID.desc())
                             .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {

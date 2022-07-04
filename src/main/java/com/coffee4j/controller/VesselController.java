@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j vessel data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version July 2, 2022
+ * @version July 3, 2022
  */
 @RestController
 @RequestMapping("/api/vessel")
@@ -163,7 +163,7 @@ public final class VesselController {
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(defaultValue = "0") int offsetId,
+                                        @RequestParam(required = false) Integer offsetId,
                                         @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
@@ -173,7 +173,13 @@ public final class VesselController {
 
         int userId = user.id();
 
-        Condition condition = VESSEL.USER_ID.eq(userId);
+        Condition condition = DSL.noCondition();
+
+        if (offsetId != null) {
+            condition = condition.and(VESSEL.ID.lessThan(offsetId));
+        } //end if
+
+        condition = condition.and(VESSEL.USER_ID.eq(userId));
 
         if (id != null) {
             condition = condition.and(VESSEL.ID.eq(id));
@@ -191,8 +197,7 @@ public final class VesselController {
             result = context.select(VESSEL.ID, VESSEL.NAME)
                             .from(VESSEL)
                             .where(condition)
-                            .orderBy(VESSEL.ID)
-                            .seek(offsetId)
+                            .orderBy(VESSEL.ID.desc())
                             .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
