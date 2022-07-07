@@ -25,15 +25,15 @@ public final class DataFiller {
 
         RandomGenerator generator = RandomGenerator.getDefault();
 
-        int coffeeId = generator.nextInt(1, 10_001);
+        int coffeeId = generator.nextInt(1, 100_001);
 
-        int waterId = generator.nextInt(1, 10_001);
+        int waterId = generator.nextInt(1, 100_001);
 
-        int brewerId = generator.nextInt(1, 10_001);
+        int brewerId = generator.nextInt(1, 100_001);
 
-        int filterId = generator.nextInt(1, 10_001);
+        int filterId = generator.nextInt(1, 100_001);
 
-        int vesselId = generator.nextInt(1, 10_001);
+        int vesselId = generator.nextInt(1, 100_001);
 
         BigDecimal coffeeMass = new BigDecimal("30.0000");
 
@@ -54,7 +54,9 @@ public final class DataFiller {
     } //createRandomBrew
 
     private static void createRandomCoffee() {
-        int userId = 1;
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int userId = generator.nextInt(1, 4);
 
         String coffee = UUID.randomUUID()
                             .toString();
@@ -72,7 +74,9 @@ public final class DataFiller {
     } //createRandomCoffee
 
     private static void createRandomWater() {
-        int userId = 1;
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int userId = generator.nextInt(1, 4);
 
         String water = UUID.randomUUID()
                             .toString();
@@ -90,7 +94,9 @@ public final class DataFiller {
     } //createRandomWater
 
     private static void createRandomBrewer() {
-        int userId = 1;
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int userId = generator.nextInt(1, 4);
 
         String brewer = UUID.randomUUID()
                             .toString();
@@ -108,7 +114,9 @@ public final class DataFiller {
     } //createRandomBrewer
 
     private static void createRandomFilter() {
-        int userId = 1;
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int userId = generator.nextInt(1, 4);
 
         String filter = UUID.randomUUID()
                             .toString();
@@ -126,7 +134,9 @@ public final class DataFiller {
     } //createRandomFilter
 
     private static void createRandomVessel() {
-        int userId = 1;
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int userId = generator.nextInt(1, 4);
 
         String vessel = UUID.randomUUID()
                             .toString();
@@ -145,7 +155,15 @@ public final class DataFiller {
 
     public static void main(String[] args) {
         for (int i = 0; i < 100_000; i++) {
+            DataFiller.createRandomCoffee();
+
+            DataFiller.createRandomWater();
+
             DataFiller.createRandomBrewer();
+
+            DataFiller.createRandomFilter();
+
+            DataFiller.createRandomVessel();
         } //end for
     } //main
 }

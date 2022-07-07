@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j brewer data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version July 3, 2022
+ * @version July 7, 2022
  */
 @RestController
 @RequestMapping("/api/brewer")
@@ -163,7 +163,7 @@ public final class BrewerController {
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(required = false) Integer offsetId,
+                                        @RequestParam(name = "offset_id", required = false) Integer offsetId,
                                         @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 

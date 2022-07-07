@@ -57,7 +57,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j brew data.
  *
  * @author Logan Kulinski, lbkulinski@gmail.com
- * @version June 13, 2022
+ * @version July 7, 2022
  */
 @RestController
 @RequestMapping("/api/brew")
@@ -219,7 +219,9 @@ public final class BrewController {
                                         @RequestParam(required = false, name = "filter_id") Integer filterId,
                                         @RequestParam(required = false, name = "vessel_id") Integer vesselId,
                                         @RequestParam(required = false, name = "coffee_mass") BigDecimal coffeeMass,
-                                        @RequestParam(required = false, name = "water_mass") BigDecimal waterMass) {
+                                        @RequestParam(required = false, name = "water_mass") BigDecimal waterMass,
+                                        @RequestParam(name = "offset_id", required = false) Integer offsetId,
+                                        @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -228,7 +230,13 @@ public final class BrewController {
 
         int userId = user.id();
 
-        Condition condition = BREW.USER_ID.eq(userId);
+        Condition condition = DSL.noCondition();
+
+        if (offsetId != null) {
+            condition = condition.and(BREWER.ID.lessThan(offsetId));
+        } //end if
+
+        condition = condition.and(BREW.USER_ID.eq(userId));
 
         if (id != null) {
             condition = BREW.ID.eq(id);
@@ -303,6 +311,7 @@ public final class BrewController {
                             .join(VESSEL)
                             .on(VESSEL.ID.eq(BREW.VESSEL_ID))
                             .where(condition)
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
