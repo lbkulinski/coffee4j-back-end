@@ -49,9 +49,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * The REST controller used to interact with the Coffee4j brew data.
@@ -191,6 +190,66 @@ public final class BrewController {
     } //create
 
     /**
+     * Returns a brew using the specified record.
+     *
+     * @param record the record to be used in the operation
+     * @return a brew using the specified record
+     * @throws NullPointerException if the specified record is {@code null}
+     */
+    private Map<String, Object> getBrew(Record record) {
+        Objects.requireNonNull(record, "the specified record is null");
+
+        int id = record.get(BREW.ID);
+
+        LocalDateTime timestamp = record.get(BREW.TIMESTAMP);
+
+        int coffeeId = record.get(COFFEE.ID);
+
+        String coffeeName = record.get(COFFEE.NAME);
+
+        int waterId = record.get(WATER.ID);
+
+        String waterName = record.get(WATER.NAME);
+
+        int brewerId = record.get(BREWER.ID);
+
+        String brewerName = record.get(BREWER.NAME);
+
+        int filterId = record.get(FILTER.ID);
+
+        String filterName = record.get(FILTER.NAME);
+
+        int vesselId = record.get(VESSEL.ID);
+
+        String vesselName = record.get(VESSEL.NAME);
+
+        return Map.of(
+            "id", id,
+            "timestamp", timestamp,
+            "coffee", Map.of(
+                "id", coffeeId,
+                "name", coffeeName
+            ),
+            "water", Map.of(
+                "id", waterId,
+                "name", waterName
+            ),
+            "brewer", Map.of(
+                "id", brewerId,
+                "name", brewerName
+            ),
+            "filter", Map.of(
+                "id", filterId,
+                "name", filterName
+            ),
+            "vessel", Map.of(
+                "id", vesselId,
+                "name", vesselName
+            )
+        );
+    } //getBrew
+
+    /**
      * Attempts to read the brew data of the current logged-in user. An ID, timestamp, coffee ID, water ID, brewer ID,
      * filter ID, vessel ID, coffee mass, or water mass can be used to filter the data. Assuming data exists, the ID,
      * timestamp, coffee ID, coffee name, water ID, water name, brewer ID, brew name, filter ID, filter name, vessel
@@ -260,23 +319,23 @@ public final class BrewController {
         } //end if
 
         if (coffeeId != null) {
-            condition = condition.and(BREW.COFFEE_ID.eq(coffeeId));
+            condition = condition.and(COFFEE.ID.eq(coffeeId));
         } //end if
 
         if (waterId != null) {
-            condition = condition.and(BREW.WATER_ID.eq(waterId));
+            condition = condition.and(WATER.ID.eq(waterId));
         } //end if
 
         if (brewerId != null) {
-            condition = condition.and(BREW.BREWER_ID.eq(brewerId));
+            condition = condition.and(BREWER.ID.eq(brewerId));
         } //end if
 
         if (filterId != null) {
-            condition = condition.and(BREW.FILTER_ID.eq(filterId));
+            condition = condition.and(FILTER.ID.eq(filterId));
         } //end if
 
         if (vesselId != null) {
-            condition = condition.and(BREW.VESSEL_ID.eq(vesselId));
+            condition = condition.and(VESSEL.ID.eq(vesselId));
         } //end if
 
         if (coffeeMass != null) {
@@ -294,10 +353,8 @@ public final class BrewController {
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
-            result = context.select(BREW.ID, BREW.TIMESTAMP, BREW.COFFEE_ID, COFFEE.NAME.as("coffee_name"),
-                                    BREW.WATER_ID, WATER.NAME.as("water_name"), BREW.BREWER_ID,
-                                    BREWER.NAME.as("brewer_name"), BREW.FILTER_ID, FILTER.NAME.as("filter_name"),
-                                    BREW.VESSEL_ID, VESSEL.NAME.as("vessel_name"))
+            result = context.select(BREW.ID, BREW.TIMESTAMP, COFFEE.ID, COFFEE.NAME, WATER.ID, WATER.NAME, BREWER.ID,
+                                    BREWER.NAME, FILTER.ID, FILTER.NAME, VESSEL.ID, VESSEL.NAME)
                             .from(BREW)
                             .join(COFFEE)
                             .on(COFFEE.ID.eq(BREW.COFFEE_ID))
@@ -327,7 +384,9 @@ public final class BrewController {
             return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         } //end try catch
 
-        List<Map<String, Object>> content = result.intoMaps();
+        List<Map<String, Object>> content = result.stream()
+                                                  .map(this::getBrew)
+                                                  .toList();
 
         Body<List<Map<String, Object>>> body = Body.success(content);
 
