@@ -191,6 +191,8 @@ public final class BrewerController {
 
         Result<? extends Record> result;
 
+        int rowCount;
+
         try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
@@ -200,6 +202,8 @@ public final class BrewerController {
                             .orderBy(BREWER.ID.desc())
                             .limit(limit)
                             .fetch();
+
+            rowCount = context.fetchCount(BREWER, BREWER.USER_ID.eq(userId));
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
                   .withThrowable(e)
@@ -216,7 +220,13 @@ public final class BrewerController {
 
         Body<List<Map<String, Object>>> body = Body.success(content);
 
-        return new ResponseEntity<>(body, HttpStatus.OK);
+        HttpHeaders httpHeaders = new HttpHeaders();
+
+        String recordCount = String.valueOf(rowCount);
+
+        httpHeaders.add("X-Record-Count", recordCount);
+
+        return new ResponseEntity<>(body, httpHeaders, HttpStatus.OK);
     } //read
 
     /**
