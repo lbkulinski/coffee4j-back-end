@@ -163,7 +163,7 @@ public final class CoffeeController {
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
                                         @RequestParam(required = false) String name,
-                                        @RequestParam(name = "offset_id", required = false) Integer offsetId,
+                                        @RequestParam(required = false) Integer offsetId,
                                         @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 

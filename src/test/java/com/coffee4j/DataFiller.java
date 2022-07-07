@@ -1,6 +1,8 @@
 package com.coffee4j;
 
 import org.jooq.DSLContext;
+import org.jooq.Record;
+import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -17,23 +19,148 @@ import java.util.UUID;
 import java.util.random.RandomGenerator;
 
 public final class DataFiller {
+    private static int getRandomCoffeeId(int userId) {
+        Result<? extends Record> result;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
+
+            result = context.select(Coffee.COFFEE.ID)
+                            .from(Coffee.COFFEE)
+                            .where(Coffee.COFFEE.USER_ID.eq(userId))
+                            .fetch();
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        } //end try catch
+
+        int origin = 0;
+
+        int bound = result.size();
+
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int index = generator.nextInt(origin, bound);
+
+        return result.getValue(index, Coffee.COFFEE.ID);
+    } //getRandomCoffeeId
+
+    private static int getRandomWaterId(int userId) {
+        Result<? extends Record> result;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
+
+            result = context.select(Water.WATER.ID)
+                            .from(Water.WATER)
+                            .where(Water.WATER.USER_ID.eq(userId))
+                            .fetch();
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        } //end try catch
+
+        int origin = 0;
+
+        int bound = result.size();
+
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int index = generator.nextInt(origin, bound);
+
+        return result.getValue(index, Water.WATER.ID);
+    } //getRandomWaterId
+
+    private static int getRandomBrewerId(int userId) {
+        Result<? extends Record> result;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
+
+            result = context.select(Brewer.BREWER.ID)
+                            .from(Brewer.BREWER)
+                            .where(Brewer.BREWER.USER_ID.eq(userId))
+                            .fetch();
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        } //end try catch
+
+        int origin = 0;
+
+        int bound = result.size();
+
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int index = generator.nextInt(origin, bound);
+
+        return result.getValue(index, Brewer.BREWER.ID);
+    } //getRandomBrewerId
+
+    private static int getRandomFilterId(int userId) {
+        Result<? extends Record> result;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
+
+            result = context.select(Filter.FILTER.ID)
+                            .from(Filter.FILTER)
+                            .where(Filter.FILTER.USER_ID.eq(userId))
+                            .fetch();
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        } //end try catch
+
+        int origin = 0;
+
+        int bound = result.size();
+
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int index = generator.nextInt(origin, bound);
+
+        return result.getValue(index, Filter.FILTER.ID);
+    } //getRandomFilterId
+
+    private static int getRandomVesselId(int userId) {
+        Result<? extends Record> result;
+
+        try (Connection connection = DriverManager.getConnection(Utilities.DATABASE_URL)) {
+            DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
+
+            result = context.select(Vessel.VESSEL.ID)
+                            .from(Vessel.VESSEL)
+                            .where(Vessel.VESSEL.USER_ID.eq(userId))
+                            .fetch();
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        } //end try catch
+
+        int origin = 0;
+
+        int bound = result.size();
+
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int index = generator.nextInt(origin, bound);
+
+        return result.getValue(index, Vessel.VESSEL.ID);
+    } //getRandomVesselId
+
     private static void createRandomBrew() {
-        int userId = 1;
+        RandomGenerator generator = RandomGenerator.getDefault();
+
+        int userId = generator.nextInt(1, 4);
 
         LocalDateTime timestamp = ZonedDateTime.now(ZoneId.of("UTC"))
                                                .toLocalDateTime();
 
-        RandomGenerator generator = RandomGenerator.getDefault();
+        int coffeeId = DataFiller.getRandomCoffeeId(userId);
 
-        int coffeeId = generator.nextInt(1, 100_001);
+        int waterId = DataFiller.getRandomWaterId(userId);
 
-        int waterId = generator.nextInt(1, 100_001);
+        int brewerId = DataFiller.getRandomBrewerId(userId);
 
-        int brewerId = generator.nextInt(1, 100_001);
+        int filterId = DataFiller.getRandomFilterId(userId);
 
-        int filterId = generator.nextInt(1, 100_001);
-
-        int vesselId = generator.nextInt(1, 100_001);
+        int vesselId = DataFiller.getRandomVesselId(userId);
 
         BigDecimal coffeeMass = new BigDecimal("30.0000");
 
@@ -155,15 +282,7 @@ public final class DataFiller {
 
     public static void main(String[] args) {
         for (int i = 0; i < 100_000; i++) {
-            DataFiller.createRandomCoffee();
-
-            DataFiller.createRandomWater();
-
-            DataFiller.createRandomBrewer();
-
-            DataFiller.createRandomFilter();
-
-            DataFiller.createRandomVessel();
+            DataFiller.createRandomBrew();
         } //end for
     } //main
 }

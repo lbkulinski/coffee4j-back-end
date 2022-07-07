@@ -127,13 +127,10 @@ public final class BrewController {
      * @return a {@link ResponseEntity} containing the outcome of the create operation
      */
     @PostMapping
-    public ResponseEntity<Body<?>> create(@RequestParam("coffee_id") int coffeeId,
-                                          @RequestParam("water_id") int waterId,
-                                          @RequestParam("brewer_id") int brewerId,
-                                          @RequestParam("filter_id") int filterId,
-                                          @RequestParam("vessel_id") int vesselId,
-                                          @RequestParam("coffee_mass") BigDecimal coffeeMass,
-                                          @RequestParam("water_mass") BigDecimal waterMass) {
+    public ResponseEntity<Body<?>> create(@RequestParam int coffeeId, @RequestParam int waterId,
+                                          @RequestParam int brewerId, @RequestParam int filterId,
+                                          @RequestParam int vesselId, @RequestParam BigDecimal coffeeMass,
+                                          @RequestParam BigDecimal waterMass) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -212,15 +209,15 @@ public final class BrewController {
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(required = false, name = "timestamp") String timestampString,
-                                        @RequestParam(required = false, name = "coffee_id") Integer coffeeId,
-                                        @RequestParam(required = false, name = "water_id") Integer waterId,
-                                        @RequestParam(required = false, name = "brewer_id") Integer brewerId,
-                                        @RequestParam(required = false, name = "filter_id") Integer filterId,
-                                        @RequestParam(required = false, name = "vessel_id") Integer vesselId,
-                                        @RequestParam(required = false, name = "coffee_mass") BigDecimal coffeeMass,
-                                        @RequestParam(required = false, name = "water_mass") BigDecimal waterMass,
-                                        @RequestParam(name = "offset_id", required = false) Integer offsetId,
+                                        @RequestParam(required = false) String timestampString,
+                                        @RequestParam(required = false) Integer coffeeId,
+                                        @RequestParam(required = false) Integer waterId,
+                                        @RequestParam(required = false) Integer brewerId,
+                                        @RequestParam(required = false) Integer filterId,
+                                        @RequestParam(required = false) Integer vesselId,
+                                        @RequestParam(required = false) BigDecimal coffeeMass,
+                                        @RequestParam(required = false) BigDecimal waterMass,
+                                        @RequestParam(required = false) Integer offsetId,
                                         @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
@@ -233,7 +230,7 @@ public final class BrewController {
         Condition condition = DSL.noCondition();
 
         if (offsetId != null) {
-            condition = condition.and(BREWER.ID.lessThan(offsetId));
+            condition = condition.and(BREW.ID.lessThan(offsetId));
         } //end if
 
         condition = condition.and(BREW.USER_ID.eq(userId));
@@ -311,6 +308,7 @@ public final class BrewController {
                             .join(VESSEL)
                             .on(VESSEL.ID.eq(BREW.VESSEL_ID))
                             .where(condition)
+                            .orderBy(BREW.ID.desc())
                             .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
@@ -349,15 +347,14 @@ public final class BrewController {
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
     @PutMapping
-    public ResponseEntity<Body<?>> update(@RequestParam int id,
-                                          @RequestParam(required = false, name = "timestamp") String timestampString,
-                                          @RequestParam(required = false, name = "coffee_id") Integer coffeeId,
-                                          @RequestParam(required = false, name = "water_id") Integer waterId,
-                                          @RequestParam(required = false, name = "brewer_id") Integer brewerId,
-                                          @RequestParam(required = false, name = "filter_id") Integer filterId,
-                                          @RequestParam(required = false, name = "vessel_id") Integer vesselId,
-                                          @RequestParam(required = false, name = "coffee_mass") BigDecimal coffeeMass,
-                                          @RequestParam(required = false, name = "water_mass") BigDecimal waterMass) {
+    public ResponseEntity<Body<?>> update(@RequestParam int id, @RequestParam(required = false) String timestampString,
+                                          @RequestParam(required = false) Integer coffeeId,
+                                          @RequestParam(required = false) Integer waterId,
+                                          @RequestParam(required = false) Integer brewerId,
+                                          @RequestParam(required = false) Integer filterId,
+                                          @RequestParam(required = false) Integer vesselId,
+                                          @RequestParam(required = false) BigDecimal coffeeMass,
+                                          @RequestParam(required = false) BigDecimal waterMass) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
