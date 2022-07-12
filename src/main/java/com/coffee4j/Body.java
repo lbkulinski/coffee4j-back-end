@@ -27,8 +27,8 @@ package com.coffee4j;
 /**
  * A body of a response to a Coffee4j API request.
  *
- * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @author Logan Kulinski, rashes_lineage02@icloud.com
+ * @version July 11, 2022
  * @param status the status of this body
  * @param content the content of this body
  * @param <T> the type of the content of this body

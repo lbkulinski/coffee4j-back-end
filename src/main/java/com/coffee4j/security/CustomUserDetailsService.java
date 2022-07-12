@@ -42,8 +42,8 @@ import java.util.Objects;
 /**
  * A user details service of the Coffee4j application.
  *
- * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @author Logan Kulinski, rashes_lineage02@icloud.com
+ * @version July 11, 2022
  */
 public final class CustomUserDetailsService implements UserDetailsService {
     /**

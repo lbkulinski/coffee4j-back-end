@@ -53,8 +53,8 @@ import java.util.Map;
 /**
  * The REST controller used to interact with the Coffee4j filter data.
  *
- * @author Logan Kulinski, lbkulinski@gmail.com
- * @version July 7, 2022
+ * @author Logan Kulinski, rashes_lineage02@icloud.com
+ * @version July 22, 2022
  */
 @RestController
 @RequestMapping("/api/filter")

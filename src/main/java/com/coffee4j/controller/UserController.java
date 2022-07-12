@@ -50,8 +50,8 @@ import java.util.Map;
 /**
  * The REST controller used to interact with the Coffee4j user data.
  *
- * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @author Logan Kulinski, rashes_lineage02@icloud.com
+ * @version July 11, 2022
  */
 @RestController
 @RequestMapping("/api/user")

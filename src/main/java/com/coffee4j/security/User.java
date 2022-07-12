@@ -34,8 +34,8 @@ import java.util.Objects;
 /**
  * A user of the Coffee4j application.
  *
- * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @author Logan Kulinski, rashes_lineage02@icloud.com
+ * @version July 11, 2022
  * @param id the ID of this user
  * @param username the username of this user
  * @param password the password of this user

@@ -38,8 +38,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 /**
  * A web security configuration of the Coffee4j application.
  *
- * @author Logan Kulinski, lbkulinski@gmail.com
- * @version June 20, 2022
+ * @author Logan Kulinski, rashes_lineage02@icloud.com
+ * @version July 11, 2022
  */
 @Configuration
 @EnableWebSecurity

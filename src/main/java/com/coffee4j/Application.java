@@ -30,8 +30,8 @@ import org.springframework.boot.SpringApplication;
 /**
  * An instance of the Coffee4j application.
  *
- * @author Logan Kulinski, lbkulinski@gmail.com
- * @version May 27, 2022
+ * @author Logan Kulinski, rashes_lineage02@icloud.com
+ * @version July 11, 2022
  */
 @SpringBootApplication
 public class Application {

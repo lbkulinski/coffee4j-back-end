@@ -38,8 +38,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 /**
  * A set of utilities used by the Coffee4j application.
  *
- * @author Logan Kulinski, lbkulinski@icloud.com
- * @version May 27, 2022
+ * @author Logan Kulinski, rashes_lineage02@icloud.com
+ * @version July 11, 2022
  */
 public final class Utilities {
     /**
