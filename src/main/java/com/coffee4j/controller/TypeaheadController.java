@@ -77,15 +77,17 @@ public final class TypeaheadController {
     } //static
 
     /**
-     * Attempts to read the coffee data of the current logged-in user using the specified search term. Coffees that
-     * start with the specified search term are returned. Assuming data exists, the ID and name of each coffee are
-     * returned.
+     * Attempts to read the coffee data of the current logged-in user using the specified search term and limit.
+     * Coffees that start with the specified search term are returned. Assuming data exists, the ID and name of each
+     * coffee are returned.
      *
      * @param searchTerm the search term to be used in the operation
+     * @param limit the limit to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the search operation
      */
     @GetMapping("/coffee")
-    public ResponseEntity<Body<?>> searchCoffee(@RequestParam String searchTerm) {
+    public ResponseEntity<Body<?>> searchCoffee(@RequestParam(required = false) String searchTerm,
+                                                @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -96,7 +98,9 @@ public final class TypeaheadController {
 
         Condition condition = COFFEE.USER_ID.eq(userId);
 
-        condition = condition.and(COFFEE.NAME.startsWithIgnoreCase(searchTerm));
+        if (searchTerm != null) {
+            condition = condition.and(COFFEE.NAME.startsWithIgnoreCase(searchTerm));
+        } //end if
 
         Result<? extends Record> result;
 
@@ -107,6 +111,7 @@ public final class TypeaheadController {
                             .from(COFFEE)
                             .where(condition)
                             .orderBy(COFFEE.ID.desc())
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -128,14 +133,17 @@ public final class TypeaheadController {
     } //searchCoffee
 
     /**
-     * Attempts to read the water data of the current logged-in user using the specified search term. Waters that start
-     * with the specified search term are returned. Assuming data exists, the ID and name of each water are returned.
+     * Attempts to read the water data of the current logged-in user using the specified search term and limit. Waters
+     * that start with the specified search term are returned. Assuming data exists, the ID and name of each water are
+     * returned.
      *
      * @param searchTerm the search term to be used in the operation
+     * @param limit the limit to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the search operation
      */
     @GetMapping("/water")
-    public ResponseEntity<Body<?>> searchWater(@RequestParam String searchTerm) {
+    public ResponseEntity<Body<?>> searchWater(@RequestParam(required = false) String searchTerm,
+                                               @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -146,7 +154,9 @@ public final class TypeaheadController {
 
         Condition condition = WATER.USER_ID.eq(userId);
 
-        condition = condition.and(WATER.NAME.startsWithIgnoreCase(searchTerm));
+        if (searchTerm != null) {
+            condition = condition.and(WATER.NAME.startsWithIgnoreCase(searchTerm));
+        } //end if
 
         Result<? extends Record> result;
 
@@ -157,6 +167,7 @@ public final class TypeaheadController {
                             .from(WATER)
                             .where(condition)
                             .orderBy(WATER.ID.desc())
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -178,15 +189,17 @@ public final class TypeaheadController {
     } //searchWater
 
     /**
-     * Attempts to read the brewer data of the current logged-in user using the specified search term. Brewers that
-     * start with the specified search term are returned. Assuming data exists, the ID and name of each brewer are
-     * returned.
+     * Attempts to read the brewer data of the current logged-in user using the specified search term and limit.
+     * Brewers that start with the specified search term are returned. Assuming data exists, the ID and name of each
+     * brewer are returned.
      *
      * @param searchTerm the search term to be used in the operation
+     * @param limit the limit to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the search operation
      */
     @GetMapping("/brewer")
-    public ResponseEntity<Body<?>> searchBrewer(@RequestParam String searchTerm) {
+    public ResponseEntity<Body<?>> searchBrewer(@RequestParam(required = false) String searchTerm,
+                                                @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -197,7 +210,9 @@ public final class TypeaheadController {
 
         Condition condition = BREWER.USER_ID.eq(userId);
 
-        condition = condition.and(BREWER.NAME.startsWithIgnoreCase(searchTerm));
+        if (searchTerm != null) {
+            condition = condition.and(BREWER.NAME.startsWithIgnoreCase(searchTerm));
+        } //end if
 
         Result<? extends Record> result;
 
@@ -208,6 +223,7 @@ public final class TypeaheadController {
                             .from(BREWER)
                             .where(condition)
                             .orderBy(BREWER.ID.desc())
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -229,15 +245,17 @@ public final class TypeaheadController {
     } //searchBrewer
 
     /**
-     * Attempts to read the filter data of the current logged-in user using the specified search term. Filters that
-     * start with the specified search term are returned. Assuming data exists, the ID and name of each filter are
-     * returned.
+     * Attempts to read the filter data of the current logged-in user using the specified search term and limit.
+     * Filters that start with the specified search term are returned. Assuming data exists, the ID and name of each
+     * filter are returned.
      *
      * @param searchTerm the search term to be used in the operation
+     * @param limit the limit to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the search operation
      */
     @GetMapping("/filter")
-    public ResponseEntity<Body<?>> searchFilter(@RequestParam String searchTerm) {
+    public ResponseEntity<Body<?>> searchFilter(@RequestParam(required = false) String searchTerm,
+                                                @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -248,7 +266,9 @@ public final class TypeaheadController {
 
         Condition condition = FILTER.USER_ID.eq(userId);
 
-        condition = condition.and(FILTER.NAME.startsWithIgnoreCase(searchTerm));
+        if (searchTerm != null) {
+            condition = condition.and(FILTER.NAME.startsWithIgnoreCase(searchTerm));
+        } //end if
 
         Result<? extends Record> result;
 
@@ -259,6 +279,7 @@ public final class TypeaheadController {
                             .from(FILTER)
                             .where(condition)
                             .orderBy(FILTER.ID.desc())
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
@@ -280,15 +301,17 @@ public final class TypeaheadController {
     } //searchFilter
 
     /**
-     * Attempts to read the vessel data of the current logged-in user using the specified search term. Vessels that
-     * start with the specified search term are returned. Assuming data exists, the ID and name of each vessel are
-     * returned.
+     * Attempts to read the vessel data of the current logged-in user using the specified search term and limit.
+     * Vessels that start with the specified search term are returned. Assuming data exists, the ID and name of each
+     * vessel are returned.
      *
      * @param searchTerm the search term to be used in the operation
+     * @param limit the limit to be used in the operation
      * @return a {@link ResponseEntity} containing the outcome of the search operation
      */
     @GetMapping("/vessel")
-    public ResponseEntity<Body<?>> searchVessel(@RequestParam String searchTerm) {
+    public ResponseEntity<Body<?>> searchVessel(@RequestParam(required = false) String searchTerm,
+                                                @RequestParam(defaultValue = "10") int limit) {
         User user = Utilities.getLoggedInUser();
 
         if (user == null) {
@@ -299,7 +322,9 @@ public final class TypeaheadController {
 
         Condition condition = VESSEL.USER_ID.eq(userId);
 
-        condition = condition.and(VESSEL.NAME.startsWithIgnoreCase(searchTerm));
+        if (searchTerm != null) {
+            condition = condition.and(VESSEL.NAME.startsWithIgnoreCase(searchTerm));
+        } //end if
 
         Result<? extends Record> result;
 
@@ -310,6 +335,7 @@ public final class TypeaheadController {
                             .from(VESSEL)
                             .where(condition)
                             .orderBy(VESSEL.ID.desc())
+                            .limit(limit)
                             .fetch();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
