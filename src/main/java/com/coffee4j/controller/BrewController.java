@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  * The REST controller used to interact with the Coffee4j brew data.
  *
  * @author Logan Kulinski, rashes_lineage02@icloud.com
- * @version July 11, 2022
+ * @version July 21, 2022
  */
 @RestController
 @RequestMapping("/api/brew")
@@ -223,6 +223,10 @@ public final class BrewController {
 
         String vesselName = record.get(VESSEL.NAME);
 
+        BigDecimal coffeeMass = record.get(BREW.COFFEE_MASS);
+
+        BigDecimal waterMass = record.get(BREW.WATER_MASS);
+
         return Map.of(
             "id", id,
             "timestamp", timestamp,
@@ -245,7 +249,9 @@ public final class BrewController {
             "vessel", Map.of(
                 "id", vesselId,
                 "name", vesselName
-            )
+            ),
+            "coffeeMass", coffeeMass,
+            "waterMass", waterMass
         );
     } //getBrew
 
@@ -354,7 +360,8 @@ public final class BrewController {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             result = context.select(BREW.ID, BREW.TIMESTAMP, COFFEE.ID, COFFEE.NAME, WATER.ID, WATER.NAME, BREWER.ID,
-                                    BREWER.NAME, FILTER.ID, FILTER.NAME, VESSEL.ID, VESSEL.NAME)
+                                    BREWER.NAME, FILTER.ID, FILTER.NAME, VESSEL.ID, VESSEL.NAME, BREW.COFFEE_MASS,
+                                    BREW.WATER_MASS)
                             .from(BREW)
                             .join(COFFEE)
                             .on(COFFEE.ID.eq(BREW.COFFEE_ID))
