@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  * The REST controller used to interact with the Coffee4j brew data.
  *
  * @author Logan Kulinski, rashes_lineage02@icloud.com
- * @version July 21, 2022
+ * @version July 26, 2022
  */
 @RestController
 @RequestMapping("/api/brew")
@@ -423,7 +423,8 @@ public final class BrewController {
      * @return a {@link ResponseEntity} containing the outcome of the update operation
      */
     @PutMapping
-    public ResponseEntity<Body<?>> update(@RequestParam int id, @RequestParam(required = false) String timestampString,
+    public ResponseEntity<Body<?>> update(@RequestParam int id,
+                                          @RequestParam(name = "timestamp", required = false) String timestampString,
                                           @RequestParam(required = false) Integer coffeeId,
                                           @RequestParam(required = false) Integer waterId,
                                           @RequestParam(required = false) Integer brewerId,
