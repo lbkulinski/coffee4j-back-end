@@ -279,7 +279,7 @@ public final class BrewController {
      */
     @GetMapping
     public ResponseEntity<Body<?>> read(@RequestParam(required = false) Integer id,
-                                        @RequestParam(required = false) String timestampString,
+                                        @RequestParam(name = "timestamp", required = false) String timestampString,
                                         @RequestParam(required = false) Integer coffeeId,
                                         @RequestParam(required = false) Integer waterId,
                                         @RequestParam(required = false) Integer brewerId,
