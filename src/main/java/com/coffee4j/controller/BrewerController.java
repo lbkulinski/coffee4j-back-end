@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j brewer data.
  *
  * @author Logan Kulinski, rashes_lineage02@icloud.com
- * @version July 11, 2022
+ * @version July 28, 2022
  */
 @RestController
 @RequestMapping("/api/brewer")
@@ -109,8 +109,8 @@ public final class BrewerController {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             record = context.insertInto(BREWER)
-                            .columns(BREWER.USER_ID, BREWER.NAME)
-                            .values(userId, name)
+                            .set(BREWER.USER_ID, userId)
+                            .set(BREWER.NAME, name)
                             .returning(BREWER.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {

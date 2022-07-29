@@ -54,7 +54,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j filter data.
  *
  * @author Logan Kulinski, rashes_lineage02@icloud.com
- * @version July 22, 2022
+ * @version July 28, 2022
  */
 @RestController
 @RequestMapping("/api/filter")
@@ -112,8 +112,8 @@ public final class FilterController {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             record = context.insertInto(FILTER)
-                            .columns(FILTER.USER_ID, FILTER.NAME)
-                            .values(userId, name)
+                            .set(FILTER.USER_ID, userId)
+                            .set(FILTER.NAME, name)
                             .returning(FILTER.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {

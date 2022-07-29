@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j water data.
  *
  * @author Logan Kulinski, rashes_lineage02@icloud.com
- * @version July 11, 2022
+ * @version July 28, 2022
  */
 @RestController
 @RequestMapping("/api/water")
@@ -109,8 +109,8 @@ public final class WaterController {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             record = context.insertInto(WATER)
-                            .columns(WATER.USER_ID, WATER.NAME)
-                            .values(userId, name)
+                            .set(WATER.USER_ID, userId)
+                            .set(WATER.NAME, name)
                             .returning(WATER.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {

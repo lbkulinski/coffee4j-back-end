@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j coffee data.
  *
  * @author Logan Kulinski, rashes_lineage02@icloud.com
- * @version July 11, 2022
+ * @version July 28, 2022
  */
 @RestController
 @RequestMapping("/api/coffee")
@@ -109,8 +109,8 @@ public final class CoffeeController {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             record = context.insertInto(COFFEE)
-                            .columns(COFFEE.USER_ID, COFFEE.NAME)
-                            .values(userId, name)
+                            .set(COFFEE.USER_ID, userId)
+                            .set(COFFEE.NAME, name)
                             .returning(COFFEE.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {

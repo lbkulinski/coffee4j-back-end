@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j vessel data.
  *
  * @author Logan Kulinski, rashes_lineage02@icloud.com
- * @version July 11, 2022
+ * @version July 28, 2022
  */
 @RestController
 @RequestMapping("/api/vessel")
@@ -109,8 +109,8 @@ public final class VesselController {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             record = context.insertInto(VESSEL)
-                            .columns(VESSEL.USER_ID, VESSEL.NAME)
-                            .values(userId, name)
+                            .set(VESSEL.USER_ID, userId)
+                            .set(VESSEL.NAME, name)
                             .returning(VESSEL.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {

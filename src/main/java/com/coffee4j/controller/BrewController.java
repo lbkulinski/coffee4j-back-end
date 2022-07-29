@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  * The REST controller used to interact with the Coffee4j brew data.
  *
  * @author Logan Kulinski, rashes_lineage02@icloud.com
- * @version July 26, 2022
+ * @version July 28, 2022
  */
 @RestController
 @RequestMapping("/api/brew")
@@ -146,10 +146,15 @@ public final class BrewController {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             record = context.insertInto(BREW)
-                            .columns(BREW.USER_ID, BREW.TIMESTAMP, BREW.COFFEE_ID, BREW.WATER_ID, BREW.BREWER_ID,
-                                     BREW.FILTER_ID, BREW.VESSEL_ID, BREW.COFFEE_MASS, BREW.WATER_MASS)
-                            .values(userId, timestamp, coffeeId, waterId, brewerId, filterId, vesselId, coffeeMass,
-                                    waterMass)
+                            .set(BREW.USER_ID, userId)
+                            .set(BREW.TIMESTAMP, timestamp)
+                            .set(BREW.COFFEE_ID, coffeeId)
+                            .set(BREW.WATER_ID, waterId)
+                            .set(BREW.BREWER_ID, brewerId)
+                            .set(BREW.FILTER_ID, filterId)
+                            .set(BREW.VESSEL_ID, vesselId)
+                            .set(BREW.COFFEE_MASS, coffeeMass)
+                            .set(BREW.WATER_MASS, waterMass)
                             .returning(BREW.ID)
                             .fetchOne();
         } catch (SQLException | DataAccessException e) {

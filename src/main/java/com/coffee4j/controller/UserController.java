@@ -51,7 +51,7 @@ import java.util.Map;
  * The REST controller used to interact with the Coffee4j user data.
  *
  * @author Logan Kulinski, rashes_lineage02@icloud.com
- * @version July 11, 2022
+ * @version July 28, 2022
  */
 @RestController
 @RequestMapping("/api/user")
@@ -106,8 +106,8 @@ public final class UserController {
             DSLContext context = DSL.using(connection, SQLDialect.POSTGRES);
 
             rowsChanged = context.insertInto(USER)
-                                 .columns(USER.USERNAME, USER.PASSWORD_HASH)
-                                 .values(username, passwordHash)
+                                 .set(USER.USERNAME, username)
+                                 .set(USER.PASSWORD_HASH, passwordHash)
                                  .execute();
         } catch (SQLException | DataAccessException e) {
             LOGGER.atError()
